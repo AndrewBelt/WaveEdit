@@ -1,0 +1,6 @@
+[submodule "noc"]
+	path = noc
+	url = https://github.com/guillaumechereau/noc.git
+[submodule "lodepng"]
+	path = lodepng
+	url = https://github.com/lvandeve/lodepng.git
