@@ -1,5 +1,7 @@
 #include "WaveEditor.hpp"
 
+#include <shellapi.h>
+
 
 void openBrowser(const char *url) {
 	// shell injection is possible if the URL is not trusted

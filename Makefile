@@ -11,7 +11,8 @@ LDFLAGS = -lSDL2 -lGL \
 # OS-specific
 MACHINE = $(shell gcc -dumpmachine)
 ifneq (,$(findstring linux,$(MACHINE)))
-	CXXFLAGS += -DNOC_FILE_DIALOG_GTK $(shell pkg-config --cflags gtk+-2.0)
+	CXXFLAGS += -DNOC_FILE_DIALOG_GTK
+	CXXFLAGS += $(shell pkg-config --cflags gtk+-2.0)
 	LDFLAGS += $(shell pkg-config --libs gtk+-2.0) -lpthread
 else ifneq (,$(findstring apple,$(MACHINE)))
 else ifneq (,$(findstring mingw,$(MACHINE)))
