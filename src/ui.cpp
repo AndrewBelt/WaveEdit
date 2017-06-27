@@ -298,7 +298,7 @@ void renderMenuBar() {
 	// Draw main menu
 	if (ImGui::BeginMenuBar()) {
 		// This will be hidden by the window with the logo
-		if (ImGui::BeginMenu("                        V0.2", false)) {
+		if (ImGui::BeginMenu("                        v0.3", false)) {
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("File")) {
@@ -633,7 +633,7 @@ void initStyle() {
 
 	// Load fonts
 	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->AddFontFromFileTTF("lekton/Lekton-Regular.ttf", 15.0);
+	io.Fonts->AddFontFromFileTTF("fonts/Lekton-Regular.ttf", 15.0);
 }
 
 void uiInit() {

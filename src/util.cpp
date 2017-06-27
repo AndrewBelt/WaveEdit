@@ -1,7 +1,9 @@
 #include "WaveEditor.hpp"
 
+#if defined(_WIN32)
+#include <windows.h>
 #include <shellapi.h>
-
+#endif
 
 void openBrowser(const char *url) {
 	// shell injection is possible if the URL is not trusted

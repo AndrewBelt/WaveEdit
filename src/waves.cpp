@@ -13,6 +13,7 @@ static int filterCallback(const struct dirent *dir) {
 }
 
 void wavesInit() {
+	/*
 	struct dirent **directories;
 	const char *wavesDir = "waves";
 	int directoriesLen = scandir(wavesDir, &directories, filterCallback, alphasort);
@@ -56,4 +57,5 @@ void wavesInit() {
 		free(directories[i]);
 	}
 	free(directories);
+	*/
 }

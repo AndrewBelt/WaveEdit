@@ -9,7 +9,7 @@
 
 /** Sets the style colors and font */
 
-int main() {
+int main(int argc, char **argv) {
 	// Set up SDL
 	int err = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 	assert(!err);
