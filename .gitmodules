@@ -7,3 +7,6 @@
 [submodule "imgui"]
 	path = imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "kissfft"]
+	path = kissfft
+	url = https://github.com/itdaniher/kissfft.git

@@ -4,6 +4,20 @@
 
 Bank currentBank;
 
+const char *effectNames[EFFECTS_LEN] {
+	"Pre-Gain",
+	"Harmonic Shift",
+	"Comb Filter",
+	"Ring Modulation",
+	"Chebyshev Wavefolding",
+	"Sample & Hold",
+	"Quantization",
+	"Slew Limiter",
+	"Lowpass Filter",
+	"Highpass Filter",
+	"Post-Gain",
+};
+
 
 void bankInit() {
 	bankClear();
@@ -11,24 +25,24 @@ void bankInit() {
 
 void updatePost(int waveId) {
 	Wave *wave = &currentBank.waves[waveId];
-	Effect *effect = &wave->effect;
+	float *effects = wave->effects;
 	float out[WAVE_LEN];
 	memcpy(out, wave->samples, sizeof(float) * WAVE_LEN);
 
 	// Pre-gain
-	if (effect->preGain) {
-		float gain = powf(20.0, effect->preGain);
+	if (effects[PRE_GAIN]) {
+		float gain = powf(20.0, effects[PRE_GAIN]);
 		for (int i = 0; i < WAVE_LEN; i++) {
 			out[i] *= gain;
 		}
 	}
 
 	// Harmonic Shift
-	if (effect->harmonicShift > 0.0) {
+	if (effects[HARMONIC_SHIFT] > 0.0) {
 		// Shift Fourier phase proportionally
 		float tmp[WAVE_LEN];
 		RFFT(out, tmp, WAVE_LEN);
-		float phase = clampf(effect->harmonicShift, 0.0, 1.0);
+		float phase = clampf(effects[HARMONIC_SHIFT], 0.0, 1.0);
 		float br = cosf(2 * M_PI * phase);
 		float bi = sinf(2 * M_PI * phase);
 		for (int i = 0; i < WAVE_LEN / 2; i++) {
@@ -38,10 +52,9 @@ void updatePost(int waveId) {
 	}
 
 	// Comb filter
-	if (effect->comb > 0.0) {
+	if (effects[COMB] > 0.0) {
 		const float base = 0.75;
 		const int taps = 40;
-		float comb = effect->comb;
 
 		// Build the kernel in Fourier space
 		// Place taps at positions `comb * j`, with exponentially decreasing amplitude
@@ -51,7 +64,7 @@ void updatePost(int waveId) {
 				float amplitude = powf(base, j);
 				// Normalize by sum of geometric series
 				amplitude *= (1.0 - base);
-				float phase = -2.0 * M_PI * k * comb * j;
+				float phase = -2.0 * M_PI * k * effects[COMB] * j;
 				kernel[2 * k] += amplitude * cosf(phase);
 				kernel[2 * k + 1] += amplitude * sinf(phase);
 			}
@@ -67,8 +80,8 @@ void updatePost(int waveId) {
 	}
 
 	// Ring modulation
-	if (effect->ring > 0.0) {
-		float ring = ceilf(powf(effect->ring, 2) * (WAVE_LEN / 2 - 1));
+	if (effects[RING] > 0.0) {
+		float ring = ceilf(powf(effects[RING], 2) * (WAVE_LEN / 2 - 1));
 		for (int i = 0; i < WAVE_LEN; i++) {
 			float phase = (float)i / WAVE_LEN * ring;
 			out[i] *= sinf(2 * M_PI * phase);
@@ -76,8 +89,8 @@ void updatePost(int waveId) {
 	}
 
 	// Chebyshev waveshaping
-	if (effect->chebyshev > 0.0) {
-		float n = powf(50.0, effect->chebyshev);
+	if (effects[CHEBYSHEV] > 0.0) {
+		float n = powf(50.0, effects[CHEBYSHEV]);
 		for (int i = 0; i < WAVE_LEN; i++) {
 			// Apply a distant variant of the Chebyshev polynomial of the first kind
 			if (-1.0 <= out[i] && out[i] <= 1.0)
@@ -87,9 +100,9 @@ void updatePost(int waveId) {
 		}
 	}
 
-	// Quantize
-	if (effect->quantization > 0.0) {
-		float frameskip = powf(WAVE_LEN / 2.0, clampf(effect->quantization, 0.0, 1.0));
+	// Sample & Hold
+	if (effects[SAMPLE_AND_HOLD] > 0.0) {
+		float frameskip = powf(WAVE_LEN / 2.0, clampf(effects[SAMPLE_AND_HOLD], 0.0, 1.0));
 		float tmp[WAVE_LEN + 1];
 		memcpy(tmp, out, sizeof(float) * WAVE_LEN);
 		tmp[WAVE_LEN] = tmp[0];
@@ -101,17 +114,17 @@ void updatePost(int waveId) {
 		}
 	}
 
-	// Posterize
-	if (effect->posterization > 1e-3) {
-		float levels = powf(clampf(effect->posterization, 0.0, 1.0), -1.5);
+	// Quantization
+	if (effects[QUANTIZATION] > 1e-3) {
+		float levels = powf(clampf(effects[QUANTIZATION], 0.0, 1.0), -1.5);
 		for (int i = 0; i < WAVE_LEN; i++) {
 			out[i] = roundf(out[i] * levels) / levels;
 		}
 	}
 
 	// Slew Limiter
-	if (effect->slew > 0.0) {
-		float slew = powf(0.001, effect->slew);
+	if (effects[SLEW] > 0.0) {
+		float slew = powf(0.001, effects[SLEW]);
 
 		float y = out[0];
 		for (int i = 1; i < WAVE_LEN; i++) {
@@ -124,11 +137,11 @@ void updatePost(int waveId) {
 
 	// Brick-wall lowpass / highpass filter
 	// TODO Maybe change this into a more musical filter
-	if (effect->lowpass > 0.0 || effect->highpass) {
+	if (effects[LOWPASS] > 0.0 || effects[HIGHPASS]) {
 		float fft[WAVE_LEN];
 		RFFT(out, fft, WAVE_LEN);
-		float lowpass = 1.0 - effect->lowpass;
-		float highpass = effect->highpass;
+		float lowpass = 1.0 - effects[LOWPASS];
+		float highpass = effects[HIGHPASS];
 		for (int i = 1; i < WAVE_LEN / 2; i++) {
 			float v = clampf(WAVE_LEN / 2 * lowpass - i, 0.0, 1.0) * clampf(-WAVE_LEN / 2 * highpass + i, 0.0, 1.0);
 			fft[2 * i] *= v;
@@ -139,15 +152,15 @@ void updatePost(int waveId) {
 
 	// TODO Consider removing because Normalize does this for you
 	// Post gain
-	if (effect->postGain) {
-		float gain = powf(20.0, effect->postGain);
+	if (effects[POST_GAIN]) {
+		float gain = powf(20.0, effects[POST_GAIN]);
 		for (int i = 0; i < WAVE_LEN; i++) {
 			out[i] *= gain;
 		}
 	}
 
 	// Cycle
-	if (effect->cycle) {
+	if (wave->cycle) {
 		float start = out[0];
 		float end = out[WAVE_LEN - 1] / (WAVE_LEN - 1) * WAVE_LEN;
 
@@ -157,7 +170,7 @@ void updatePost(int waveId) {
 	}
 
 	// Normalize
-	if (effect->normalize) {
+	if (wave->normalize) {
 		float max = -INFINITY;
 		float min = INFINITY;
 		for (int i = 0; i < WAVE_LEN; i++) {
@@ -241,7 +254,7 @@ void commitHarmonics(int waveId) {
 }
 
 void clearEffect(int waveId) {
-	memset(&currentBank.waves[waveId].effect, 0, sizeof(Effect));
+	memset(currentBank.waves[waveId].effects, 0, sizeof(float) * EFFECTS_LEN);
 	commitWave(waveId);
 }
 
@@ -255,18 +268,18 @@ void bakeEffect(int waveId) {
 
 void randomizeEffect(int waveId) {
 	Wave *wave = &currentBank.waves[waveId];
-	Effect *effect = &wave->effect;
+	float *effects = wave->effects;
 
-	effect->preGain       = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effect->harmonicShift = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effect->comb          = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effect->ring          = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effect->chebyshev     = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effect->quantization  = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effect->posterization = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effect->slew          = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effect->lowpass       = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effect->highpass      = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
+	effects[PRE_GAIN]        = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
+	effects[HARMONIC_SHIFT]  = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
+	effects[COMB]            = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
+	effects[RING]            = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
+	effects[CHEBYSHEV]       = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
+	effects[SAMPLE_AND_HOLD] = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
+	effects[QUANTIZATION]    = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
+	effects[SLEW]            = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
+	effects[LOWPASS]         = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
+	effects[HIGHPASS]        = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
 	commitWave(waveId);
 }
 
@@ -318,7 +331,7 @@ void saveBank(const char *fileName) {
 	int16_t data[BANK_LEN * WAVE_LEN];
 	for (int b = 0; b < BANK_LEN; b++)
 		for (int i = 0; i < WAVE_LEN; i++) {
-			data[b * WAVE_LEN + i] = (int16_t)(clampf(currentBank.waves[b].samples[i], -1.0, 1.0) * 32767.0);
+			data[b * WAVE_LEN + i] = (int16_t)(clampf(currentBank.waves[b].postSamples[i], -1.0, 1.0) * 32767.0);
 		}
 	fwrite(&data, 2, BANK_LEN * WAVE_LEN, f);
 

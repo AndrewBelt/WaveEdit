@@ -9,6 +9,10 @@
 #include <vector>
 
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
+
 ////////////////////
 // math.cpp
 ////////////////////
@@ -98,18 +102,25 @@ void openBrowser(const char *url);
 #define BANK_LEN 64
 #define WAVE_LEN 256
 
+enum EffectID {
+	PRE_GAIN,
+	HARMONIC_SHIFT,
+	COMB,
+	RING,
+	CHEBYSHEV,
+	SAMPLE_AND_HOLD,
+	QUANTIZATION,
+	SLEW,
+	LOWPASS,
+	HIGHPASS,
+	POST_GAIN,
+	EFFECTS_LEN
+};
+
+extern const char *effectNames[EFFECTS_LEN];
+
 struct Effect {
-	float preGain;
-	float harmonicShift;
-	float comb;
-	float ring;
-	float chebyshev;
-	float quantization;
-	float posterization;
-	float slew;
-	float lowpass;
-	float highpass;
-	float postGain;
+	float params;
 	bool cycle;
 	bool normalize;
 };
@@ -125,7 +136,9 @@ struct Wave {
 	float postSpectrum[WAVE_LEN];
 	float postHarmonics[WAVE_LEN / 2];
 
-	Effect effect;
+	float effects[EFFECTS_LEN];
+	bool cycle;
+	bool normalize;
 };
 
 struct Bank {

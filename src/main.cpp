@@ -7,8 +7,6 @@
 #include "imgui/examples/sdl_opengl2_example/imgui_impl_sdl.h"
 
 
-/** Sets the style colors and font */
-
 int main(int argc, char **argv) {
 	// Set up SDL
 	int err = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);

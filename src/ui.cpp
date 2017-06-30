@@ -297,7 +297,7 @@ void renderMenuBar() {
 	// Draw main menu
 	if (ImGui::BeginMenuBar()) {
 		// This will be hidden by the window with the logo
-		if (ImGui::BeginMenu("                        v0.3", false)) {
+		if (ImGui::BeginMenu("                        " TOSTRING(VERSION), false)) {
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("File")) {
@@ -374,6 +374,15 @@ void renderToolSelector(Tool *tool) {
 	if (ImGui::RadioButton("Eraser", *tool == ERASER_TOOL)) *tool = ERASER_TOOL;
 }
 
+void effectSlider(EffectID effect) {
+	char id[64];
+	snprintf(id, sizeof(id), "##%s", effectNames[effect]);
+	char text[64];
+	snprintf(text, sizeof(text), "%s: %%.3f", effectNames[effect]);
+	if (ImGui::SliderFloat(id, &currentBank.waves[selectedWave].effects[effect], 0.0f, 1.0f, text))
+		updatePost(selectedWave);
+}
+
 void renderEditor() {
 	ImGui::BeginChild("Sidebar", ImVec2(200, 0), true);
 	{
@@ -409,7 +418,7 @@ void renderEditor() {
 	ImGui::BeginChild("Editor", ImVec2(0, 0), true);
 	{
 		Wave *wave = &currentBank.waves[selectedWave];
-		Effect *effect = &wave->effect;
+		float *effects = wave->effects;
 
 		ImGui::PushItemWidth(-1);
 
@@ -447,21 +456,13 @@ void renderEditor() {
 			commitHarmonics(selectedWave);
 		}
 
-		if (ImGui::SliderFloat("##Pre Gain", &effect->preGain, 0.0f, 1.0f, "Pre Gain: %.3f")) updatePost(selectedWave);
-		if (ImGui::SliderFloat("##Harmonic Shift", &effect->harmonicShift, 0.0f, 1.0f, "Harmonic Shift: %.3f")) updatePost(selectedWave);
-		if (ImGui::SliderFloat("##Comb", &effect->comb, 0.0f, 1.0f, "Comb: %.3f")) updatePost(selectedWave);
-		if (ImGui::SliderFloat("##Ring Modulation", &effect->ring, 0.0f, 1.0f, "Ring Modulation: %.3f")) updatePost(selectedWave);
-		if (ImGui::SliderFloat("##Chebyshev", &effect->chebyshev, 0.0f, 1.0f, "Chebyshev: %.3f")) updatePost(selectedWave);
-		if (ImGui::SliderFloat("##Quantization", &effect->quantization, 0.0f, 1.0f, "Quantization: %.3f")) updatePost(selectedWave);
-		if (ImGui::SliderFloat("##Posterization", &effect->posterization, 0.0f, 1.0f, "Posterization: %.3f")) updatePost(selectedWave);
-		if (ImGui::SliderFloat("##Slew Limiter", &effect->slew, 0.0f, 1.0f, "Slew Limiter: %.3f")) updatePost(selectedWave);
-		if (ImGui::SliderFloat("##Brickwall Lowpass", &effect->lowpass, 0.0f, 1.0f, "Brickwall Lowpass: %.3f")) updatePost(selectedWave);
-		if (ImGui::SliderFloat("##Brickwall Highpass", &effect->highpass, 0.0f, 1.0f, "Brickwall Highpass: %.3f")) updatePost(selectedWave);
-		if (ImGui::SliderFloat("##Post Gain", &effect->postGain, 0.0f, 1.0f, "Post Gain: %.3f")) updatePost(selectedWave);
+		for (int i = 0; i < EFFECTS_LEN; i++) {
+			effectSlider((EffectID) i);
+		}
 
-		if (ImGui::Checkbox("Cycle", &effect->cycle)) updatePost(selectedWave);
+		if (ImGui::Checkbox("Cycle", &currentBank.waves[selectedWave].cycle)) updatePost(selectedWave);
 		ImGui::SameLine();
-		if (ImGui::Checkbox("Normalize", &effect->normalize)) updatePost(selectedWave);
+		if (ImGui::Checkbox("Normalize", &currentBank.waves[selectedWave].normalize)) updatePost(selectedWave);
 
 		ImGui::SameLine();
 		if (ImGui::Button("Apply")) bakeEffect(selectedWave);
@@ -476,20 +477,18 @@ void renderEditor() {
 	ImGui::EndChild();
 }
 
-// TODO The effectOffset is super hacky
-void renderEffect(const char *name, int effectOffset, Tool tool) {
-	#define EFFECT(i, offset) *(float*)(((char*)&currentBank.waves[i].effect) + offset)
+void effectHistogram(EffectID effect, Tool tool) {
 	float value[BANK_LEN];
 	for (int i = 0; i < BANK_LEN; i++) {
-		value[i] = EFFECT(i, effectOffset);
+		value[i] = currentBank.waves[i].effects[effect];
 	}
-	ImGui::Text(name);
-	if (renderHistogram(name, 80, value, BANK_LEN, NULL, 0, tool)) {
+	ImGui::Text(effectNames[effect]);
+	if (renderHistogram(effectNames[effect], 80, value, BANK_LEN, NULL, 0, tool)) {
 		for (int i = 0; i < BANK_LEN; i++) {
-			if (EFFECT(i, effectOffset) != value[i]) {
+			if (currentBank.waves[i].effects[effect] != value[i]) {
 				updatePost(i);
 				morphZ = i;
-				EFFECT(i, effectOffset) = value[i];
+				currentBank.waves[i].effects[effect] = value[i];
 			}
 		}
 	}
@@ -501,19 +500,39 @@ void renderEffectEditor() {
 		renderToolSelector(&tool);
 
 		ImGui::PushItemWidth(-1);
-		renderEffect("Pre Gain", offsetof(Effect, preGain), tool);
-		renderEffect("Harmonic Shift", offsetof(Effect, harmonicShift), tool);
-		renderEffect("Comb", offsetof(Effect, comb), tool);
-		renderEffect("Ring Modulation", offsetof(Effect, ring), tool);
-		renderEffect("Chebyshev", offsetof(Effect, chebyshev), tool);
-		renderEffect("Quantization", offsetof(Effect, quantization), tool);
-		renderEffect("Posterization", offsetof(Effect, posterization), tool);
-		renderEffect("Slew Limiter", offsetof(Effect, slew), tool);
-		renderEffect("Brickwall Lowpass", offsetof(Effect, lowpass), tool);
-		renderEffect("Brickwall Highpass", offsetof(Effect, highpass), tool);
-		renderEffect("Post Gain", offsetof(Effect, postGain), tool);
+		for (int i = 0; i < EFFECTS_LEN; i++) {
+			effectHistogram((EffectID) i, tool);
+		}
 		ImGui::PopItemWidth();
 
+		if (ImGui::Button("Normalize All")) {
+			for (int i = 0; i < BANK_LEN; i++) {
+				currentBank.waves[i].normalize = true;
+				updatePost(i);
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Normalize None")) {
+			for (int i = 0; i < BANK_LEN; i++) {
+				currentBank.waves[i].normalize = false;
+				updatePost(i);
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cycle All")) {
+			for (int i = 0; i < BANK_LEN; i++) {
+				currentBank.waves[i].cycle = true;
+				updatePost(i);
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cycle None")) {
+			for (int i = 0; i < BANK_LEN; i++) {
+				currentBank.waves[i].cycle = false;
+				updatePost(i);
+			}
+		}
+		ImGui::SameLine();
 		if (ImGui::Button("Randomize All")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				randomizeEffect(i);

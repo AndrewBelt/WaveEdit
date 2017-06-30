@@ -1,12 +1,24 @@
-VERSION = v0.3.1
+VERSION = v0.3.2
 
-CPPFLAGS = -Wall -Wno-unused -O2 \
+FLAGS = -Wall -Wno-unused -O2 \
 	-DVERSION=$(VERSION) \
-	-I. -Iimgui -Inoc \
+	-I. -Iimgui -Inoc -Ikissfft \
 	$(shell pkg-config --cflags --static sdl2) \
 	$(shell pkg-config --cflags samplerate)
+CFLAGS =
 CXXFLAGS = -std=c++11
 LDFLAGS =
+
+
+SOURCES = \
+	kissfft/kiss_fft.c \
+	kissfft/tools/kiss_fftr.c \
+	lodepng/lodepng.cpp \
+	imgui/imgui.cpp \
+	imgui/imgui_draw.cpp \
+	imgui/imgui_demo.cpp \
+	imgui/examples/sdl_opengl2_example/imgui_impl_sdl.cpp \
+	$(wildcard src/*.cpp)
 
 
 # OS-specific
@@ -14,44 +26,34 @@ MACHINE = $(shell gcc -dumpmachine)
 ifneq (,$(findstring linux,$(MACHINE)))
 	# Linux
 	ARCH = lin
-	CPPFLAGS += -DNOC_FILE_DIALOG_GTK
-	CPPFLAGS += $(shell pkg-config --cflags gtk+-2.0)
+	FLAGS += $(shell pkg-config --cflags gtk+-2.0)
 	LDFLAGS += -lGL -lpthread \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
 		-lgtk-x11-2.0 -lgobject-2.0
+	SOURCES += src/noc_file_dialog_gtk.c
 else ifneq (,$(findstring apple,$(MACHINE)))
 	# Mac
 	ARCH = mac
-	CPPFLAGS += -DNOC_FILE_DIALOG_OSX
-	SOURCES_M = $(wildcard src/*.m)
 	LDFLAGS += -stdlib=libc++ -lpthread -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate)
+	SOURCES += src/noc_file_dialog_osx.m
 else ifneq (,$(findstring mingw,$(MACHINE)))
 	# Windows
 	ARCH = win
-	CPPFLAGS += -D_USE_MATH_DEFINES -DNOC_FILE_DIALOG_WIN32
+	FLAGS += -D_USE_MATH_DEFINES
 	LDFLAGS += \
 		$(shell pkg-config --libs samplerate) \
 		$(shell pkg-config --libs sdl2) \
 		-lopengl32 -mwindows
+	SOURCES += src/noc_file_dialog_win.c
 else
 	$(error Could not determine machine type. Try hacking around in the Makefile)
 endif
 
 
-SOURCES_C = \
-	lodepng/lodepng.c \
-	pffft/pffft.c
-
-SOURCES_CXX = $(wildcard src/*.cpp) \
-	imgui/imgui.cpp \
-	imgui/imgui_draw.cpp \
-	imgui/imgui_demo.cpp \
-	imgui/examples/sdl_opengl2_example/imgui_impl_sdl.cpp \
-
-OBJECTS = $(SOURCES_C:.c=.o) $(SOURCES_CXX:.cpp=.o) $(SOURCES_M:.m=.o)
+OBJECTS = $(SOURCES:%=%.o)
 
 
 all: WaveEditor
@@ -85,3 +87,12 @@ else ifeq ($(ARCH),win)
 endif
 	cd dist && zip -9 -r WaveEditor_$(VERSION)_$(ARCH).zip WaveEditor
 
+
+%.c.o: %.c
+	$(CC) $(FLAGS) $(CFLAGS) -c -o $@ $<
+
+%.cpp.o: %.cpp
+	$(CXX) $(FLAGS) $(CXXFLAGS) -c -o $@ $<
+
+%.m.o: %.m
+	$(CC) $(FLAGS) $(CFLAGS) -c -o $@ $<
