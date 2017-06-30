@@ -7,12 +7,31 @@
 #include "imgui/examples/sdl_opengl2_example/imgui_impl_sdl.h"
 
 
-static char *appdir;
+
+#include <unistd.h> // for chdir
+#include <libgen.h> // for dirname
+#include <mach-o/dyld.h> // for _NSGetExecutablePath
+#include <limits.h> // for PATH_MAX?
+
+void fixWorkingDirectory() {
+	char path[PATH_MAX];
+	uint32_t pathLen = sizeof(path);
+	int err = _NSGetExecutablePath(path, &pathLen);
+	assert(!err);
+
+	// Switch to the directory of the actual binary
+	chdir(dirname(path));
+	// Navigate relatively to the resource directory
+	chdir("../Resources");
+}
 
 int main(int argc, char **argv) {
+	char cwd[1024]
+	getcwd(cwd, sizeof(cwd));
 	FILE *f = fopen("/tmp/out.txt", "w");
-	fprintf("%s\n", appdir);
+	fprintf("%s\n", cwd);
 	fclose(f);
+	exit(0);
 
 	// Set up SDL
 	int err = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
