@@ -7,7 +7,13 @@
 #include "imgui/examples/sdl_opengl2_example/imgui_impl_sdl.h"
 
 
+static char *appdir;
+
 int main(int argc, char **argv) {
+	FILE *f = fopen("/tmp/out.txt", "w");
+	fprintf("%s\n", appdir);
+	fclose(f);
+
 	// Set up SDL
 	int err = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 	assert(!err);
