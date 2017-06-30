@@ -1,4 +1,4 @@
-#include "WaveEditor.hpp"
+#include "WaveEdit.hpp"
 
 #if defined(_WIN32)
 #include <windows.h>

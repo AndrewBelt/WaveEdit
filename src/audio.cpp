@@ -1,4 +1,4 @@
-#include "WaveEditor.hpp"
+#include "WaveEdit.hpp"
 
 #include <SDL.h>
 #include <samplerate.h>
