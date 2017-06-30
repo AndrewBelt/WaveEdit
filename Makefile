@@ -1,7 +1,7 @@
 VERSION = v0.3.2
 
 FLAGS = -Wall -Wno-unused -O2 \
-	-DVERSION=$(VERSION) \
+	-DARCH=$(ARCH) -DVERSION=$(VERSION) \
 	-I. -Iimgui -Inoc -Ikissfft \
 	$(shell pkg-config --cflags --static sdl2) \
 	$(shell pkg-config --cflags samplerate)

@@ -7,6 +7,7 @@
 #include "imgui/examples/sdl_opengl2_example/imgui_impl_sdl.h"
 
 
+#if ARCH == mac
 
 #include <unistd.h> // for chdir
 #include <libgen.h> // for dirname
@@ -23,15 +24,18 @@ void fixWorkingDirectory() {
 	chdir(dirname(path));
 	// Navigate relatively to the resource directory
 	chdir("../Resources");
+
+	char cwd[PATH_MAX];
+	getcwd(cwd, sizeof(cwd));
+	printf("Changing directory to %s\n", cwd);
 }
 
+#endif
+
 int main(int argc, char **argv) {
-	char cwd[1024]
-	getcwd(cwd, sizeof(cwd));
-	FILE *f = fopen("/tmp/out.txt", "w");
-	fprintf("%s\n", cwd);
-	fclose(f);
-	exit(0);
+#if ARCH == mac
+	fixWorkingDirectory();
+#endif
 
 	// Set up SDL
 	int err = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
