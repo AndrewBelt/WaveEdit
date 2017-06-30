@@ -95,12 +95,12 @@ else ifeq ($(ARCH),mac)
 	cp WaveEdit dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	cp -R logo* fonts waves dist/WaveEdit/WaveEdit.app/Contents/Resources
 	# Remap dylibs in executable
-	otool -L dist/WaveEdit/WaveEdit.app/Contents/Resources/WaveEdit
-	cp /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/Resources
-	install_name_tool -change /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/Resources/WaveEdit
-	cp /usr/local/opt/libsamplerate/lib/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/Resources
-	install_name_tool -change /usr/local/opt/libsamplerate/lib/libsamplerate.0.dylib @executable_path/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/Resources/WaveEdit
-	otool -L dist/WaveEdit/WaveEdit.app/Contents/Resources/WaveEdit
+	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	cp /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	install_name_tool -change /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	cp /usr/local/opt/libsamplerate/lib/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	install_name_tool -change /usr/local/opt/libsamplerate/lib/libsamplerate.0.dylib @executable_path/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 endif
 	cd dist && zip -9 -r WaveEdit_$(VERSION)_$(ARCH).zip WaveEdit
 
