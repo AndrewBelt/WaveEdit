@@ -1,13 +1,12 @@
 VERSION = v0.3.1
 
-FLAGS = -Wall -Wno-unused -O2 \
+CPPFLAGS = -Wall -Wno-unused -O2 \
 	-DVERSION=$(VERSION) \
-	-I. -Iimgui \
+	-I. -Iimgui -Inoc \
 	$(shell pkg-config --cflags --static sdl2) \
 	$(shell pkg-config --cflags samplerate)
-CXXFLAGS = $(FLAGS) -std=c++11
+CXXFLAGS = -std=c++11
 LDFLAGS =
-
 
 
 # OS-specific
@@ -15,8 +14,8 @@ MACHINE = $(shell gcc -dumpmachine)
 ifneq (,$(findstring linux,$(MACHINE)))
 	# Linux
 	ARCH = lin
-	CXXFLAGS += -DNOC_FILE_DIALOG_GTK
-	CXXFLAGS += $(shell pkg-config --cflags gtk+-2.0)
+	CPPFLAGS += -DNOC_FILE_DIALOG_GTK
+	CPPFLAGS += $(shell pkg-config --cflags gtk+-2.0)
 	LDFLAGS += -lGL -lpthread \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
@@ -24,10 +23,15 @@ ifneq (,$(findstring linux,$(MACHINE)))
 else ifneq (,$(findstring apple,$(MACHINE)))
 	# Mac
 	ARCH = mac
+	CPPFLAGS += -DNOC_FILE_DIALOG_OSX
+	SOURCES_M = $(wildcard src/*.m)
+	LDFLAGS += -stdlib=libc++ -lpthread -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
+		$(shell pkg-config --libs sdl2) \
+		$(shell pkg-config --libs samplerate)
 else ifneq (,$(findstring mingw,$(MACHINE)))
 	# Windows
 	ARCH = win
-	CXXFLAGS += -D_USE_MATH_DEFINES -DNOC_FILE_DIALOG_WIN32
+	CPPFLAGS += -D_USE_MATH_DEFINES -DNOC_FILE_DIALOG_WIN32
 	LDFLAGS += \
 		$(shell pkg-config --libs samplerate) \
 		$(shell pkg-config --libs sdl2) \
@@ -47,7 +51,7 @@ SOURCES_CXX = $(wildcard src/*.cpp) \
 	imgui/imgui_demo.cpp \
 	imgui/examples/sdl_opengl2_example/imgui_impl_sdl.cpp \
 
-OBJECTS = $(SOURCES_C:.c=.c.o) $(SOURCES_CXX:.cpp=.cpp.o)
+OBJECTS = $(SOURCES_C:.c=.o) $(SOURCES_CXX:.cpp=.o) $(SOURCES_M:.m=.o)
 
 
 all: WaveEditor
@@ -81,11 +85,3 @@ else ifeq ($(ARCH),win)
 endif
 	cd dist && zip -9 -r WaveEditor_$(VERSION)_$(ARCH).zip WaveEditor
 
-%.c.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-%.cpp.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-%.m.o: %.m
-	$(CC) $(CFLAGS) -c -o $@ $<

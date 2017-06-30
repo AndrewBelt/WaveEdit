@@ -7,7 +7,6 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 
-#define NOC_FILE_DIALOG_IMPLEMENTATION
 extern "C" {
 #include "noc/noc_file_dialog.h"
 }
