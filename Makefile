@@ -73,17 +73,28 @@ clean:
 .PHONY: dist
 dist: WaveEditor
 	mkdir -p dist/WaveEditor
-	cp -R WaveEditor logo* LICENSE* fonts banks waves dist/WaveEditor
+	cp -R banks waves dist/WaveEditor
+	cp LICENSE* dist/WaveEditor
 ifeq ($(ARCH),lin)
-	cp WaveEditor.sh dist/WaveEditor
+	cp -R logo* fonts dist/WaveEditor
+	cp WaveEditor WaveEditor.sh dist/WaveEditor
 	cp /usr/lib/libSDL2-2.0.so.0 dist/WaveEditor
 	cp /usr/lib/libsamplerate.so.0 dist/WaveEditor
 else ifeq ($(ARCH),win)
+	cp -R logo* fonts dist/WaveEditor
+	cp WaveEditor.exe dist/WaveEditor
 	cp /mingw64/bin/libgcc_s_seh-1.dll dist/WaveEditor
 	cp /mingw64/bin/libsamplerate-0.dll dist/WaveEditor
 	cp /mingw64/bin/libstdc++-6.dll dist/WaveEditor
 	cp /mingw64/bin/libwinpthread-1.dll dist/WaveEditor
 	cp /mingw64/bin/SDL2.dll dist/WaveEditor
+else ifeq ($(ARCH),mac)
+	mkdir -p dist/WaveEditor/WaveEditor.app/Contents/MacOS
+	mkdir -p dist/WaveEditor/WaveEditor.app/Contents/Resources
+	cp Info.plist dist/WaveEditor/WaveEditor.app/Contents
+	cp WaveEditor dist/WaveEditor/WaveEditor.app/Contents/MacOS
+	cp -R logo* fonts dist/WaveEditor/WaveEditor.app/Contents/Resources
+	# TODO dylibs
 endif
 	cd dist && zip -9 -r WaveEditor_$(VERSION)_$(ARCH).zip WaveEditor
 
