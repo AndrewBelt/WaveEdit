@@ -8,6 +8,7 @@ Install the following dependencies.
 
 - [SDL2](https://www.libsdl.org/)
 - [libsamplerate](http://www.mega-nerd.com/SRC/)
+- [libsndfile](http://www.mega-nerd.com/libsndfile/)
 - pkg-config (build requirement)
 - [MSYS2](http://www.msys2.org/) (if using Windows)
 

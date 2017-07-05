@@ -17,14 +17,16 @@ extern "C" {
 
 
 static bool showTestWindow = false;
-static bool exportPopup = false;
+static bool importPopup = false;
 static ImTextureID logoTexture;
 static int selectedWave = 0;
+static char lastFilename[1024] = "\0";
 
 static enum {
 	WAVEFORM_EDITOR = 0,
 	EFFECT_EDITOR,
 	GRID_VIEW,
+	_3D_VIEW,
 } currentPage = WAVEFORM_EDITOR;
 
 
@@ -53,6 +55,8 @@ static void getImageSize(ImTextureID id, int *width, int *height) {
 
 void selectWave(int waveId) {
 	selectedWave = waveId;
+	morphX = (float)(selectedWave % BANK_GRID_WIDTH);
+	morphY = (float)(selectedWave / BANK_GRID_WIDTH);
 	morphZ = (float)selectedWave;
 }
 
@@ -183,9 +187,8 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 	const ImGuiID id = window->GetID(name);
 
 	// Compute positions
-	ImVec2 pos = window->DC.CursorPos;
 	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
-	ImRect box = ImRect(pos, pos + size);
+	ImRect box = ImRect(window->DC.CursorPos, window->DC.CursorPos + size);
 	ImRect inner = ImRect(box.Min + style.FramePadding, box.Max - style.FramePadding);
 	ImGui::ItemSize(box, style.FramePadding.y);
 	if (!ImGui::ItemAdd(box, NULL))
@@ -213,21 +216,21 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 	bool edited = editorBehavior(id, box, inner, points, pointsLen, 0.0, pointsLen - 1, 1.0, -1.0, tool);
 
 	ImGui::PushClipRect(box.Min, box.Max, true);
-	ImVec2 pos0, pos1;
+	ImVec2 lastPos;
 	// Draw lines
 	if (lines) {
 		for (int i = 0; i < linesLen; i++) {
-			pos1 = ImVec2(rescalef(i, 0, linesLen - 1, inner.Min.x, inner.Max.x), rescalef(lines[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
+			ImVec2 pos = ImVec2(rescalef(i, 0, linesLen - 1, inner.Min.x, inner.Max.x), rescalef(lines[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
 			if (i > 0)
-				window->DrawList->AddLine(pos0, pos1, ImGui::GetColorU32(ImGuiCol_PlotLines));
-			pos0 = pos1;
+				window->DrawList->AddLine(lastPos, pos, ImGui::GetColorU32(ImGuiCol_PlotLines));
+			lastPos = pos;
 		}
 	}
 	// Draw points
 	if (points) {
 		for (int i = 0; i < pointsLen; i++) {
-			pos1 = ImVec2(rescalef(i, 0, pointsLen - 1, inner.Min.x, inner.Max.x), rescalef(points[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
-			window->DrawList->AddCircleFilled(pos1 + ImVec2(0.5, 0.5), 2.0, ImGui::GetColorU32(ImGuiCol_PlotLines), 12);
+			ImVec2 pos = ImVec2(rescalef(i, 0, pointsLen - 1, inner.Min.x, inner.Max.x), rescalef(points[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
+			window->DrawList->AddCircleFilled(pos + ImVec2(0.5, 0.5), 2.0, ImGui::GetColorU32(ImGuiCol_PlotLines), 12);
 		}
 	}
 	ImGui::PopClipRect();
@@ -275,6 +278,32 @@ bool renderHistogram(const char *name, float height, float *points, int pointsLe
 	return edited;
 }
 
+void renderWave3D(float height, const float *const *waves, int bankLen, int waveLen) {
+	ImGuiContext &g = *GImGui;
+	ImGuiWindow *window = ImGui::GetCurrentWindow();
+	const ImGuiStyle &style = g.Style;
+
+	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
+	ImRect box = ImRect(window->DC.CursorPos, window->DC.CursorPos + size);
+	ImRect inner = ImRect(box.Min + style.FramePadding, box.Max - style.FramePadding);
+
+	ImGui::PushClipRect(box.Min, box.Max, true);
+
+	const float waveHeight = 10.0;
+	ImVec2 waveOffset = ImVec2(5, -5);
+
+	for (int b = 0; b < bankLen-1; b++) {
+		ImVec2 points[waveLen];
+		for (int i = 0; i < waveLen; i++) {
+			float value = waves[b][i];
+			points[i] = ImVec2(rescalef(i, 0, waveLen - 1, inner.Min.x, inner.Max.x), rescalef(value, -1.0, 1.0, inner.Max.y - 100 + waveHeight, inner.Max.y - 100 - waveHeight) + 0.5*i) + waveOffset*b;
+		}
+		window->DrawList->AddPolyline(points, waveLen, ImGui::GetColorU32(ImVec4(1.0, 0.8, 0.2, 1.0)), false, 0.1, true);
+	}
+
+	ImGui::PopClipRect();
+}
+
 void renderMenuBar() {
 	// HACK
 	// Display a window on top of the menu with the logo, since I'm too lazy to make my own custom MenuImageItem widget
@@ -302,19 +331,29 @@ void renderMenuBar() {
 		}
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("New Bank")) bankClear();
-			if (ImGui::MenuItem("Load Bank...")) {
+			if (ImGui::MenuItem("Open Bank...")) {
 				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
-				if (filename)
+				if (filename) {
 					loadBank(filename);
+					snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
+				}
 			}
-			if (ImGui::MenuItem("Save Bank", NULL, false, false));
+			if (ImGui::MenuItem("Save Bank", NULL, false, lastFilename[0] != '\0')) {
+					saveBank(lastFilename);
+			}
 			if (ImGui::MenuItem("Save Bank As...")) {
 				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", NULL, NULL);
-				if (filename)
+				if (filename) {
 					saveBank(filename);
+					snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
+				}
 			}
-			if (ImGui::MenuItem("Import Waves...", NULL, false, false)); //importPopup = true;
-			if (ImGui::MenuItem("Export Waves...", NULL, false, false)) exportPopup = true;
+			if (ImGui::MenuItem("Save Waves To Folder...", NULL, false, true)) {
+				const char *dirname = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN | NOC_FILE_DIALOG_DIR, NULL, NULL, NULL);
+				if (dirname)
+					saveWaves(dirname);
+			}
+			if (ImGui::MenuItem("Import Waves...", NULL, false, true)) importPopup = true;
 
 			ImGui::EndMenu();
 		}
@@ -345,20 +384,22 @@ void renderPreview() {
 	ImGui::SameLine();
 	ImGui::SliderFloat("##playFrequency", &playFrequency, 1.0f, 10000.0f, "Frequency: %.2f Hz", 3.0f);
 
-	// if (ImGui::RadioButton("Morph XY", playModeXY)) playModeXY = true;
-	// ImGui::SameLine();
-	// if (ImGui::RadioButton("Morph Z", !playModeXY)) playModeXY = false;
+	if (ImGui::RadioButton("Morph XY", playModeXY)) playModeXY = true;
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Morph Z", !playModeXY)) playModeXY = false;
 	if (playModeXY) {
-		// ImGui::SameLine();
-		ImGui::PushItemWidth(300.0);
-		ImGui::SliderFloat("##Morph X", &morphX, 0.0, 7.0, "Morph X: %.3f");
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-1.0);
-		ImGui::SliderFloat("##Morph Y", &morphY, 0.0, 7.0, "Morph Y: %.3f");
+		float width = ImGui::CalcItemWidth() / 2.0 - ImGui::GetStyle().FramePadding.y;
+		ImGui::PushItemWidth(width);
+		ImGui::SliderFloat("##Morph X", &morphX, 0.0, BANK_GRID_WIDTH - 1, "Morph X: %.3f");
+		ImGui::SameLine();
+		ImGui::SliderFloat("##Morph Y", &morphY, 0.0, BANK_GRID_HEIGHT - 1, "Morph Y: %.3f");
 	}
 	else {
-		// ImGui::SameLine();
-		ImGui::SliderFloat("##Morph Z", &morphZ, 0.0, 63.0, "Morph Z: %.3f");
+		ImGui::SameLine();
+		ImGui::PushItemWidth(-1.0);
+		ImGui::SliderFloat("##Morph Z", &morphZ, 0.0, BANK_LEN - 1, "Morph Z: %.3f");
 	}
 }
 
@@ -383,7 +424,7 @@ void effectSlider(EffectID effect) {
 		updatePost(selectedWave);
 }
 
-void renderEditor() {
+void editorPage() {
 	ImGui::BeginChild("Sidebar", ImVec2(200, 0), true);
 	{
 		// Render + dragging
@@ -487,14 +528,14 @@ void effectHistogram(EffectID effect, Tool tool) {
 		for (int i = 0; i < BANK_LEN; i++) {
 			if (currentBank.waves[i].effects[effect] != value[i]) {
 				updatePost(i);
-				morphZ = i;
+				selectWave(i);
 				currentBank.waves[i].effects[effect] = value[i];
 			}
 		}
 	}
 }
 
-void renderEffectEditor() {
+void effectPage() {
 	ImGui::BeginChild("Effect Editor", ImVec2(0, 0), true); {
 		static Tool tool = PENCIL_TOOL;
 		renderToolSelector(&tool);
@@ -533,29 +574,97 @@ void renderEffectEditor() {
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Randomize All")) {
+		if (ImGui::Button("Randomize")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				randomizeEffect(i);
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Clear All")) {
+		if (ImGui::Button("Clear")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				clearEffect(i);
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Apply")) {
+			for (int i = 0; i < BANK_LEN; i++) {
+				bakeEffect(i);
 			}
 		}
 	}
 	ImGui::EndChild();
 }
 
-void renderExport() {
-	if (exportPopup) {
-		ImGui::OpenPopup("Export");
-		exportPopup = false;
+void gridPage() {}
+
+void _3DViewPage() {
+	ImGui::BeginChild("3D View", ImVec2(0, 0), true);
+	{
+		float *waves[BANK_LEN];
+		for (int b = 0; b < BANK_LEN; b++) {
+			waves[b] = currentBank.waves[b].postSamples;
+		}
+		renderWave3D(600, waves, BANK_LEN, WAVE_LEN);
 	}
-	if (ImGui::BeginPopupModal("Export", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
-		ImGui::Text("All those beautiful files will be deleted.\nThis operation cannot be undone!\n\n");
-		if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+	ImGui::EndChild();
+}
+
+void renderImport() {
+	static float offsetPercent;
+	static float zoom;
+	static enum {
+		OVERWRITE, CLEAR, ADD, MULTIPLY,
+	} mode;
+	static float *audio;
+	static int audioLength;
+
+	// Open popup and reset state
+	if (importPopup) {
+		importPopup = false;
+		const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
+		if (filename) {
+			audio = loadAudio(filename, &audioLength);
+			offsetPercent = 0.0;
+			zoom = 1.0;
+			mode = OVERWRITE;
+			ImGui::OpenPopup("Import");
+		}
+	}
+	if (ImGui::BeginPopupModal("Import", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
+		// Wave view
+		renderWave("imported", 100, NULL, 0, audio, audioLength, NO_TOOL);
+
+		// Parameters
+		ImGui::PushItemWidth(-1.0);
+		ImGui::SliderFloat("##offsetPercent", &offsetPercent, 0.0, 100.0, "Offset: %.2f%%");
+		ImGui::SliderFloat("##zoom", &zoom, 1.0, 100.0, "Zoom: %.2f", 2.0);
+
+		// Modes
+		if (ImGui::RadioButton("Overwrite", mode == OVERWRITE)) mode = OVERWRITE;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Clear", mode == CLEAR)) mode = CLEAR;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Mix", mode == ADD)) mode = ADD;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Ring Modulate", mode == MULTIPLY)) mode = MULTIPLY;
+
+		// Buttons
+		bool cleanup = false;
+
+		if (ImGui::Button("Cancel")) {
+			cleanup = true;
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Import")) {
+			cleanup = true;
+			ImGui::CloseCurrentPopup();
+		}
+
+		if (cleanup) {
+			if (audio)
+				free(audio);
+		}
 		ImGui::EndPopup();
 	}
 }
@@ -571,22 +680,25 @@ void renderMain() {
 		renderPreview();
 		// Tab bar
 		{
-			const char *tabLabels[3] = {
+			static const char *tabLabels[4] = {
 				"Waveform Editor",
 				"Effect Editor",
-				"Grid View"
+				"Grid XY View",
+				"3D Z View"
 			};
 			static int hoveredTab = 0;
-			ImGui::TabLabels(3, tabLabels, (int*)&currentPage, NULL, false, &hoveredTab);
+			ImGui::TabLabels(4, tabLabels, (int*)&currentPage, NULL, false, &hoveredTab);
 		}
 		// Page
-		if (currentPage == WAVEFORM_EDITOR)
-			renderEditor();
-		else if (currentPage == EFFECT_EDITOR)
-			renderEffectEditor();
+		switch (currentPage) {
+			case WAVEFORM_EDITOR: editorPage(); break;
+			case EFFECT_EDITOR: effectPage(); break;
+			case GRID_VIEW: gridPage(); break;
+			case _3D_VIEW: _3DViewPage(); break;
+		}
 
 		// Modals
-		renderExport();
+		renderImport();
 	}
 	ImGui::End();
 

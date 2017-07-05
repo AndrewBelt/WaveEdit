@@ -7,7 +7,7 @@
 #include "imgui/examples/sdl_opengl2_example/imgui_impl_sdl.h"
 
 
-#if ARCH == mac
+#ifdef ARCH_MAC
 
 #include <unistd.h> // for chdir
 #include <libgen.h> // for dirname
@@ -34,7 +34,7 @@ void fixWorkingDirectory() {
 #endif
 
 int main(int argc, char **argv) {
-#if ARCH == mac
+#ifdef ARCH_MAC
 	fixWorkingDirectory();
 #endif
 

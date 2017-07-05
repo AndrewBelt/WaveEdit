@@ -1,10 +1,11 @@
 VERSION = v0.3.2
 
-FLAGS = -Wall -Wno-unused -O2 \
+FLAGS = -Wall -Wno-unused -O2 -msse -mfpmath=sse -ffast-math \
 	-DARCH=$(ARCH) -DVERSION=$(VERSION) \
 	-I. -Iimgui -Inoc -Ikissfft \
 	$(shell pkg-config --cflags --static sdl2) \
-	$(shell pkg-config --cflags samplerate)
+	$(shell pkg-config --cflags samplerate) \
+	$(shell pkg-config --cflags sndfile)
 CFLAGS =
 CXXFLAGS = -std=c++11
 LDFLAGS =
@@ -26,26 +27,31 @@ MACHINE = $(shell gcc -dumpmachine)
 ifneq (,$(findstring linux,$(MACHINE)))
 	# Linux
 	ARCH = lin
-	FLAGS += $(shell pkg-config --cflags gtk+-2.0)
+	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0)
 	LDFLAGS += -lGL -lpthread \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
+		$(shell pkg-config --libs sndfile) \
 		-lgtk-x11-2.0 -lgobject-2.0
 	SOURCES += src/noc_file_dialog_gtk.c
 else ifneq (,$(findstring apple,$(MACHINE)))
 	# Mac
 	ARCH = mac
+	FLAGS += -DARCH_MAC
+	CXXFLAGS += -stdlib=libc++
 	LDFLAGS += -stdlib=libc++ -lpthread -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
 		$(shell pkg-config --libs sdl2) \
-		$(shell pkg-config --libs samplerate)
+		$(shell pkg-config --libs samplerate) \
+		$(shell pkg-config --libs sndfile)
 	SOURCES += src/noc_file_dialog_osx.m
 else ifneq (,$(findstring mingw,$(MACHINE)))
 	# Windows
 	ARCH = win
-	FLAGS += -D_USE_MATH_DEFINES
+	FLAGS += -DARCH_WIN -D_USE_MATH_DEFINES
 	LDFLAGS += \
-		$(shell pkg-config --libs samplerate) \
 		$(shell pkg-config --libs sdl2) \
+		$(shell pkg-config --libs samplerate) \
+		$(shell pkg-config --libs sndfile) \
 		-lopengl32 -mwindows
 	SOURCES += src/noc_file_dialog_win.c
 else
@@ -53,7 +59,7 @@ else
 endif
 
 
-OBJECTS = $(SOURCES:%=%.o)
+OBJECTS = $(SOURCES:%=build/%.o)
 
 
 all: WaveEdit
@@ -105,11 +111,16 @@ endif
 	cd dist && zip -9 -r WaveEdit_$(VERSION)_$(ARCH).zip WaveEdit
 
 
-%.c.o: %.c
+# SUFFIXES:
+
+build/%.c.o: %.c
+	@mkdir -p $(@D)
 	$(CC) $(FLAGS) $(CFLAGS) -c -o $@ $<
 
-%.cpp.o: %.cpp
+build/%.cpp.o: %.cpp
+	@mkdir -p $(@D)
 	$(CXX) $(FLAGS) $(CXXFLAGS) -c -o $@ $<
 
-%.m.o: %.m
+build/%.m.o: %.m
+	@mkdir -p $(@D)
 	$(CC) $(FLAGS) $(CFLAGS) -c -o $@ $<

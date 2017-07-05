@@ -100,6 +100,8 @@ void openBrowser(const char *url);
 ////////////////////
 
 #define BANK_LEN 64
+#define BANK_GRID_WIDTH 8
+#define BANK_GRID_HEIGHT 8
 #define WAVE_LEN 256
 
 enum EffectID {
@@ -155,10 +157,12 @@ void clearEffect(int waveId);
 void bakeEffect(int waveId);
 void randomizeEffect(int waveId);
 void bankClear();
-void saveBank(const char *fileName);
-void loadBank(const char *fileName);
-void loadWave(const char *fileName, float *wave);
+void saveBank(const char *filename);
+void loadBank(const char *filename);
+void saveWaves(const char *dirname);
 void setWave(int waveId, const float *wave);
+/** Caller must free(). Returns NULL if unsuccessful */
+float *loadAudio(const char *filename, int *length);
 // TODO
 // void bankHistoryPush();
 // void bankHistoryPop();
@@ -192,15 +196,15 @@ void wavesInit();
 extern float playVolume;
 extern float playFrequency;
 extern float playFrequencySmooth;
-extern bool playModeXY;
 extern bool playEnabled;
+extern bool playModeXY;
 extern float morphX;
 extern float morphY;
 extern float morphZ;
 extern int playIndex;
 extern const char *audioDeviceName;
 
-
+int resample(const float *in, int inLen, float *out, int outLen, double ratio);
 void computeOversample(const float *in, float *out, int len, int oversample);
 int audioGetDeviceCount();
 const char *audioGetDeviceName(int deviceId);

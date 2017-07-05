@@ -13,11 +13,25 @@ float morphX = 0.0;
 float morphY = 0.0;
 float morphZ = 0.0;
 int playIndex = 0;
+static float morphXSmooth = morphX;
+static float morphYSmooth = morphY;
 static float morphZSmooth = morphZ;
 static SDL_AudioDeviceID audioDevice = 0;
 static SDL_AudioSpec audioSpec;
 static SRC_STATE *audioSrc;
 
+
+int resample(const float *in, int inLen, float *out, int outLen, double ratio) {
+	SRC_DATA data;
+	data.data_in = in;
+	data.data_out = out;
+	data.input_frames = inLen;
+	data.output_frames = outLen;
+	data.end_of_input = true;
+	data.src_ratio = ratio;
+	src_simple(&data, SRC_SINC_FASTEST, 1);
+	return data.output_frames_gen;
+}
 
 void computeOversample(const float *in, float *out, int len, int oversample) {
 	float inCycle[len * 3];
@@ -32,7 +46,7 @@ void computeOversample(const float *in, float *out, int len, int oversample) {
 	data.output_frames = len * oversample * 3;
 	data.end_of_input = false;
 	data.src_ratio = (double)oversample;
-	src_simple(&data, SRC_SINC_MEDIUM_QUALITY, 1);
+	src_simple(&data, SRC_SINC_FASTEST, 1);
 	memcpy(out, outCycle + len * oversample, sizeof(float) * len * oversample);
 }
 
@@ -48,6 +62,11 @@ void audioCallback(void *userdata, Uint8 *stream, int len) {
 		float gain = powf(10.0, playVolume / 20.0);
 		double ratio = (double)audioSpec.freq / WAVE_LEN / playFrequencySmooth;
 
+		const float lambdaMorph = 0.5;
+		morphXSmooth = crossf(morphXSmooth, clampf(morphX, 0.0, BANK_GRID_WIDTH - 1), lambdaMorph);
+		morphYSmooth = crossf(morphYSmooth, clampf(morphY, 0.0, BANK_GRID_HEIGHT - 1), lambdaMorph);
+		morphZSmooth = crossf(morphZSmooth, clampf(morphZ, 0.0, BANK_LEN - 1), lambdaMorph);
+
 		int outPos = 0;
 		while (outPos < outLen) {
 			// Generate next samples
@@ -57,17 +76,28 @@ void audioCallback(void *userdata, Uint8 *stream, int len) {
 			for (int i = 0; i < inLen; i++) {
 				int index = (playIndex + i) % WAVE_LEN;
 				if (playModeXY) {
-					// TODO
-					in[i] = 0.0;
+					int xi = morphXSmooth;
+					float xf = morphXSmooth - xi;
+					int yi = morphYSmooth;
+					float yf = morphYSmooth - yi;
+					// 2D linear interpolate
+					float v0 = crossf(
+						currentBank.waves[yi * BANK_GRID_WIDTH + xi].postSamples[index],
+						currentBank.waves[yi * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
+						xf);
+					float v1 = crossf(
+						currentBank.waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + xi].postSamples[index],
+						currentBank.waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
+						xf);
+					in[i] = crossf(v0, v1, yf);
 				}
 				else {
-					const float lambdaMorphZ = 0.002;
-					morphZSmooth = crossf(morphZSmooth, clampf(morphZ, 0.0, BANK_LEN - 1), lambdaMorphZ);
 					int zi = morphZSmooth;
 					float zf = morphZSmooth - zi;
-					in[i] = currentBank.waves[zi].postSamples[index];
-					if (zf >= 1e-6)
-						in[i] = crossf(in[i], currentBank.waves[zi + 1].postSamples[index], zf);
+					in[i] = crossf(
+						currentBank.waves[zi].postSamples[index],
+						currentBank.waves[eucmodi(zi + 1, BANK_LEN)].postSamples[index],
+						zf);
 				}
 				in[i] = clampf(in[i] * gain, -1.0, 1.0);
 			}
@@ -121,7 +151,7 @@ void audioOpen(int deviceId) {
 	spec.callback = audioCallback;
 
 	const char *deviceName = deviceId >= 0 ? SDL_GetAudioDeviceName(deviceId, 0) : NULL;
-	// TODO Be more tolerant of devices which can't use floats, 1 channel
+	// TODO Be more tolerant of devices which can't use floats or 1 channel
 	audioDevice = SDL_OpenAudioDevice(deviceName, 0, &spec, &audioSpec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE);
 	if (audioDevice <= 0)
 		return;

@@ -1,5 +1,6 @@
 #include "WaveEdit.hpp"
 #include <string.h>
+#include <sndfile.h>
 
 
 Bank currentBank;
@@ -81,7 +82,7 @@ void updatePost(int waveId) {
 
 	// Ring modulation
 	if (effects[RING] > 0.0) {
-		float ring = ceilf(powf(effects[RING], 2) * (WAVE_LEN / 2 - 1));
+		float ring = ceilf(powf(effects[RING], 2) * (WAVE_LEN / 2 - 2));
 		for (int i = 0; i < WAVE_LEN; i++) {
 			float phase = (float)i / WAVE_LEN * ring;
 			out[i] *= sinf(2 * M_PI * phase);
@@ -292,87 +293,53 @@ void bankClear() {
 	}
 }
 
-void saveBank(const char *fileName) {
-	// TODO Use a separate library for this (even if I have to write it)
-
-	int16_t format = 1; // PCM
-	int16_t channels = 1;
-	uint32_t sampleRate = 44100;
-	int16_t bitsPerSample = 16;
-	uint32_t bytesPerSecond = sampleRate * bitsPerSample * channels / 8;
-	int16_t bytesPerFrame = bitsPerSample * channels / 8;
-	uint32_t dataSize = BANK_LEN * WAVE_LEN * bytesPerFrame;
-	uint32_t fileSize = 4 + (8 + 16) + (8 + dataSize);
-
-	FILE *f = fopen(fileName, "wb");
-	if (!f)
+void saveBank(const char *filename) {
+	SF_INFO info;
+	info.samplerate = 44100;
+	info.channels = 1;
+	info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16 | SF_ENDIAN_LITTLE;
+	SNDFILE *sf = sf_open(filename, SFM_WRITE, &info);
+	if (!sf)
 		return;
-
-	// RIFF header
-	fwrite("RIFF", 1, 4, f);
-	fwrite(&fileSize, 4, 1, f);
-	fwrite("WAVE", 1, 4, f);
-
-	// SubChunk1
-	fwrite("fmt ", 1, 4, f);
-	uint32_t formatLength = 16;
-	fwrite(&formatLength, 4, 1, f);
-	fwrite(&format, 2, 1, f);
-	fwrite(&channels, 2, 1, f);
-	fwrite(&sampleRate, 4, 1, f);
-	fwrite(&bytesPerSecond, 4, 1, f);
-	fwrite(&bytesPerFrame, 2, 1, f);
-	fwrite(&bitsPerSample, 2, 1, f);
-
-	// SubChunk2
-	fwrite("data", 1, 4, f);
-	fwrite(&dataSize, 4, 1, f);
-
-	int16_t data[BANK_LEN * WAVE_LEN];
-	for (int b = 0; b < BANK_LEN; b++)
-		for (int i = 0; i < WAVE_LEN; i++) {
-			data[b * WAVE_LEN + i] = (int16_t)(clampf(currentBank.waves[b].postSamples[i], -1.0, 1.0) * 32767.0);
-		}
-	fwrite(&data, 2, BANK_LEN * WAVE_LEN, f);
-
-	fclose(f);
-}
-
-void loadBank(const char *fileName) {
-	bankClear();
-
-	// TODO Rewrite this properly
-	FILE *f = fopen(fileName, "rb");
-	if (!f)
-		return;
-	fseek(f, 44, SEEK_SET);
-	int16_t data[BANK_LEN * WAVE_LEN];
-	fread(data, sizeof(int16_t), BANK_LEN * WAVE_LEN, f);
 
 	for (int b = 0; b < BANK_LEN; b++) {
-		for (int i = 0; i < WAVE_LEN; i++) {
-			currentBank.waves[b].samples[i] = data[b * WAVE_LEN + i] / 32767.0;
-		}
+		sf_write_float(sf, currentBank.waves[b].postSamples, WAVE_LEN);
+	}
+
+	sf_close(sf);
+}
+
+void loadBank(const char *filename) {
+	SF_INFO info;
+	SNDFILE *sf = sf_open(filename, SFM_READ, &info);
+	if (!sf)
+		return;
+
+	for (int b = 0; b < BANK_LEN; b++) {
+		sf_read_float(sf, currentBank.waves[b].samples, WAVE_LEN);
 		commitWave(b);
 	}
 
-	fclose(f);
+	sf_close(sf);
 }
 
-void loadWave(const char *fileName, float *wave) {
-	// TODO Rewrite this properly
-	FILE *f = fopen(fileName, "rb");
-	if (!f)
-		return;
-	fseek(f, 44, SEEK_SET);
-	int16_t data[WAVE_LEN];
-	fread(data, sizeof(int16_t), BANK_LEN * WAVE_LEN, f);
+void saveWaves(const char *dirname) {
+	for (int b = 0; b < BANK_LEN; b++) {
+		char filename[1024];
+		snprintf(filename, sizeof(filename), "%s/%02d.wav", dirname, b);
 
-	for (int j = 0; j < WAVE_LEN; j++) {
-		wave[j] = data[j] / 32767.0;
+		SF_INFO info;
+		info.samplerate = 44100;
+		info.channels = 1;
+		info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16 | SF_ENDIAN_LITTLE;
+		SNDFILE *sf = sf_open(filename, SFM_WRITE, &info);
+		if (!sf)
+			continue;
+
+		sf_write_float(sf, currentBank.waves[b].postSamples, WAVE_LEN);
+
+		sf_close(sf);
 	}
-
-	fclose(f);
 }
 
 /** If NULL, clears wave */
@@ -382,4 +349,40 @@ void setWave(int waveId, const float *wave) {
 	else
 		memset(currentBank.waves[waveId].samples, 0, sizeof(float) * WAVE_LEN);
 	commitWave(waveId);
+}
+
+float *loadAudio(const char *filename, int *length) {
+	SF_INFO info;
+	SNDFILE *sf = sf_open(filename, SFM_READ, &info);
+	if (!sf)
+		return NULL;
+
+	// Get length of audio
+	int len = sf_seek(sf, 0, SEEK_END);
+	if (len <= 0)
+		return NULL;
+	sf_seek(sf, 0, SEEK_SET);
+	float *samples = (float*) malloc(sizeof(float) * len);
+	assert(samples);
+
+	int pos = 0;
+	while (pos < len) {
+		const int bufferLen = 1024;
+		float buffer[bufferLen * info.channels];
+		int frames = sf_readf_float(sf, buffer, bufferLen);
+		for (int i = 0; i < bufferLen; i++) {
+			float sample = 0.0;
+			for (int c = 0; c < info.channels; c++) {
+				sample += buffer[i * info.channels + c];
+			}
+			samples[pos + i] = sample;
+		}
+
+		pos += bufferLen;
+	}
+
+	sf_close(sf);
+	if (length)
+		*length = len;
+	return samples;
 }
