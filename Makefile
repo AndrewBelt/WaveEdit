@@ -1,8 +1,8 @@
-VERSION = v0.3.2
+VERSION = v0.4
 
-FLAGS = -Wall -Wno-unused -O2 -msse -mfpmath=sse -ffast-math \
+FLAGS = -Wall -g -Wno-unused -O2 -msse -mfpmath=sse -ffast-math \
 	-DARCH=$(ARCH) -DVERSION=$(VERSION) \
-	-I. -Iimgui -Inoc -Ikissfft \
+	-I. -Iimgui -Inoc \
 	$(shell pkg-config --cflags --static sdl2) \
 	$(shell pkg-config --cflags samplerate) \
 	$(shell pkg-config --cflags sndfile)
@@ -12,8 +12,7 @@ LDFLAGS =
 
 
 SOURCES = \
-	kissfft/kiss_fft.c \
-	kissfft/tools/kiss_fftr.c \
+	pffft/pffft.c \
 	lodepng/lodepng.cpp \
 	imgui/imgui.cpp \
 	imgui/imgui_draw.cpp \

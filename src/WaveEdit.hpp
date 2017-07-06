@@ -7,6 +7,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <complex>
 
 
 #define STRINGIFY(x) #x
@@ -78,14 +79,20 @@ inline float randf() {
 	return (float)rand() / RAND_MAX;
 }
 
-inline void complexMult(float *ar, float *ai, float br, float bi) {
-	float oldAr = *ar;
-	*ar = oldAr * br - *ai * bi;
-	*ai = oldAr * bi + *ai * br;
+/** Complex multiply c = a * b
+It is of course acceptable to reuse arguments
+i.e. cmultf(&ar, &ai, ar, ai, br, bi)
+*/
+inline void cmultf(float *cr, float *ci, float ar, float ai, float br, float bi) {
+	*cr = ar * br - ai * bi;
+	*ci = ar * bi + ai * br;
 }
 
 void RFFT(const float *in, float *out, int len);
 void IRFFT(const float *in, float *out, int len);
+
+int resample(const float *in, int inLen, float *out, int outLen, double ratio);
+void cyclicOversample(const float *in, float *out, int len, int oversample);
 
 
 ////////////////////
@@ -93,15 +100,14 @@ void IRFFT(const float *in, float *out, int len);
 ////////////////////
 
 void openBrowser(const char *url);
+/** Caller must free(). Returns NULL if unsuccessful */
+float *loadAudio(const char *filename, int *length);
 
 
 ////////////////////
-// bank.cpp
+// wave.cpp
 ////////////////////
 
-#define BANK_LEN 64
-#define BANK_GRID_WIDTH 8
-#define BANK_GRID_HEIGHT 8
 #define WAVE_LEN 256
 
 enum EffectID {
@@ -121,12 +127,6 @@ enum EffectID {
 
 extern const char *effectNames[EFFECTS_LEN];
 
-struct Effect {
-	float params;
-	bool cycle;
-	bool normalize;
-};
-
 struct Wave {
 	float samples[WAVE_LEN];
 	/** FFT of wave, interleaved complex numbers */
@@ -141,32 +141,59 @@ struct Wave {
 	float effects[EFFECTS_LEN];
 	bool cycle;
 	bool normalize;
+
+	void clear();
+	/** Generates post*** arrays from the sample array, by applying effects */
+	void updatePost();
+	void commitSamples();
+	void commitHarmonics();
+	void clearEffects();
+	/** Applies effects to the sample array and resets the effect parameters */
+	void bakeEffects();
+	void randomizeEffects();
+	void save(const char *filename);
+};
+
+
+////////////////////
+// bank.cpp
+////////////////////
+
+#define BANK_LEN 64
+#define BANK_GRID_WIDTH 8
+#define BANK_GRID_HEIGHT 8
+
+enum ImportMode {
+	OVERWRITE_IMPORT,
+	CLEAR_IMPORT,
+	ADD_IMPORT,
+	MULTIPLY_IMPORT,
+	LOOP_IMPORT,
 };
 
 struct Bank {
 	Wave waves[BANK_LEN];
+
+	void clear();
+	void setSamples(const float *in);
+	void getSamples(float *out);
+	void importSamples(const float *in, int inLen, float offset, ImportMode mode);
+	void save(const char *filename);
+	void load(const char *filename);
+	/** Saves each wave to its own file in a directory */
+	void saveWaves(const char *dirname);
 };
 
-extern Bank currentBank;
 
-void bankInit();
-void updatePost(int waveId);
-void commitWave(int waveId);
-void commitHarmonics(int waveId);
-void clearEffect(int waveId);
-void bakeEffect(int waveId);
-void randomizeEffect(int waveId);
-void bankClear();
-void saveBank(const char *filename);
-void loadBank(const char *filename);
-void saveWaves(const char *dirname);
-void setWave(int waveId, const float *wave);
-/** Caller must free(). Returns NULL if unsuccessful */
-float *loadAudio(const char *filename, int *length);
-// TODO
-// void bankHistoryPush();
-// void bankHistoryPop();
-// void bankHistoryRedo();
+////////////////////
+// history.cpp
+////////////////////
+
+void historyPush();
+void historyPop();
+void historyRedo();
+
+extern Bank currentBank;
 
 
 ////////////////////
@@ -204,8 +231,6 @@ extern float morphZ;
 extern int playIndex;
 extern const char *audioDeviceName;
 
-int resample(const float *in, int inLen, float *out, int outLen, double ratio);
-void computeOversample(const float *in, float *out, int len, int oversample);
 int audioGetDeviceCount();
 const char *audioGetDeviceName(int deviceId);
 void audioClose();

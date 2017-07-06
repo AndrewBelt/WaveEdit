@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 
 	// Initialize modules
 	uiInit();
-	bankInit();
+	currentBank.clear();
 	wavesInit();
 	audioInit();
 

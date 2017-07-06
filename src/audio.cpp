@@ -1,5 +1,4 @@
 #include "WaveEdit.hpp"
-
 #include <SDL.h>
 #include <samplerate.h>
 
@@ -20,35 +19,6 @@ static SDL_AudioDeviceID audioDevice = 0;
 static SDL_AudioSpec audioSpec;
 static SRC_STATE *audioSrc;
 
-
-int resample(const float *in, int inLen, float *out, int outLen, double ratio) {
-	SRC_DATA data;
-	data.data_in = in;
-	data.data_out = out;
-	data.input_frames = inLen;
-	data.output_frames = outLen;
-	data.end_of_input = true;
-	data.src_ratio = ratio;
-	src_simple(&data, SRC_SINC_FASTEST, 1);
-	return data.output_frames_gen;
-}
-
-void computeOversample(const float *in, float *out, int len, int oversample) {
-	float inCycle[len * 3];
-	float outCycle[len * oversample * 3];
-	memcpy(inCycle, in, sizeof(float) * len);
-	memcpy(inCycle + len, in, sizeof(float) * len);
-	memcpy(inCycle + 2 * len, in, sizeof(float) * len);
-	SRC_DATA data;
-	data.data_in = inCycle;
-	data.data_out = outCycle;
-	data.input_frames = len * 3;
-	data.output_frames = len * oversample * 3;
-	data.end_of_input = false;
-	data.src_ratio = (double)oversample;
-	src_simple(&data, SRC_SINC_FASTEST, 1);
-	memcpy(out, outCycle + len * oversample, sizeof(float) * len * oversample);
-}
 
 void audioCallback(void *userdata, Uint8 *stream, int len) {
 	float *out = (float *) stream;

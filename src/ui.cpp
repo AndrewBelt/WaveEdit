@@ -17,7 +17,7 @@ extern "C" {
 
 
 static bool showTestWindow = false;
-static bool importPopup = false;
+static bool showImportPopup = false;
 static ImTextureID logoTexture;
 static int selectedWave = 0;
 static char lastFilename[1024] = "\0";
@@ -45,6 +45,7 @@ static ImTextureID loadImage(const char *filename) {
 	return (void*)(intptr_t) textureId;
 }
 
+
 static void getImageSize(ImTextureID id, int *width, int *height) {
 	GLuint textureId = (GLuint)(intptr_t) id;
 	glBindTexture(GL_TEXTURE_2D, textureId);
@@ -53,12 +54,14 @@ static void getImageSize(ImTextureID id, int *width, int *height) {
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+
 void selectWave(int waveId) {
 	selectedWave = waveId;
 	morphX = (float)(selectedWave % BANK_GRID_WIDTH);
 	morphY = (float)(selectedWave / BANK_GRID_WIDTH);
 	morphZ = (float)selectedWave;
 }
+
 
 enum Tool {
 	NO_TOOL,
@@ -69,6 +72,7 @@ enum Tool {
 	ERASER_TOOL,
 	SMOOTH_TOOL,
 };
+
 
 void waveLine(float *points, int pointsLen, float startIndex, float endIndex, float startValue, float endValue) {
 	// Switch indices if out of order
@@ -89,6 +93,7 @@ void waveLine(float *points, int pointsLen, float startIndex, float endIndex, fl
 	}
 }
 
+
 void waveSmooth(float *points, int pointsLen, float index) {
 	// TODO
 	for (int i = 0; i <= pointsLen - 1; i++) {
@@ -97,6 +102,7 @@ void waveSmooth(float *points, int pointsLen, float index) {
 		points[i] = clampf(points[i] + 0.01 * w, -1.0, 1.0);
 	}
 }
+
 
 void waveBrush(float *points, int pointsLen, float startIndex, float endIndex, float startValue, float endValue) {
 	const float sigma = 10.0;
@@ -107,6 +113,7 @@ void waveBrush(float *points, int pointsLen, float startIndex, float endIndex, f
 		points[i] = crossf(points[i], startValue, a);
 	}
 }
+
 
 bool editorBehavior(ImGuiID id, const ImRect& box, const ImRect& inner, float *points, int pointsLen, float minIndex, float maxIndex, float minValue, float maxValue, enum Tool tool) {
 	ImGuiContext &g = *GImGui;
@@ -180,6 +187,7 @@ bool editorBehavior(ImGuiID id, const ImRect& box, const ImRect& inner, float *p
 	return false;
 }
 
+
 bool renderWave(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool = NO_TOOL) {
 	ImGuiContext &g = *GImGui;
 	ImGuiWindow *window = ImGui::GetCurrentWindow();
@@ -238,6 +246,7 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 	return edited;
 }
 
+
 bool renderHistogram(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool) {
 	ImGuiContext &g = *GImGui;
 	ImGuiWindow *window = ImGui::GetCurrentWindow();
@@ -278,6 +287,7 @@ bool renderHistogram(const char *name, float height, float *points, int pointsLe
 	return edited;
 }
 
+
 void renderWave3D(float height, const float *const *waves, int bankLen, int waveLen) {
 	ImGuiContext &g = *GImGui;
 	ImGuiWindow *window = ImGui::GetCurrentWindow();
@@ -292,7 +302,7 @@ void renderWave3D(float height, const float *const *waves, int bankLen, int wave
 	const float waveHeight = 10.0;
 	ImVec2 waveOffset = ImVec2(5, -5);
 
-	for (int b = 0; b < bankLen-1; b++) {
+	for (int b = 0; b < bankLen; b++) {
 		ImVec2 points[waveLen];
 		for (int i = 0; i < waveLen; i++) {
 			float value = waves[b][i];
@@ -303,6 +313,7 @@ void renderWave3D(float height, const float *const *waves, int bankLen, int wave
 
 	ImGui::PopClipRect();
 }
+
 
 void renderMenuBar() {
 	// HACK
@@ -330,30 +341,35 @@ void renderMenuBar() {
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("File")) {
-			if (ImGui::MenuItem("New Bank")) bankClear();
+			if (ImGui::MenuItem("New Bank")) {
+				historyPush();
+				currentBank.clear();
+			}
 			if (ImGui::MenuItem("Open Bank...")) {
 				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
 				if (filename) {
-					loadBank(filename);
+					historyPush();
+					currentBank.load(filename);
 					snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
 				}
 			}
 			if (ImGui::MenuItem("Save Bank", NULL, false, lastFilename[0] != '\0')) {
-					saveBank(lastFilename);
+				currentBank.save(lastFilename);
 			}
 			if (ImGui::MenuItem("Save Bank As...")) {
 				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", NULL, NULL);
 				if (filename) {
-					saveBank(filename);
+					currentBank.save(filename);
 					snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
 				}
 			}
 			if (ImGui::MenuItem("Save Waves To Folder...", NULL, false, true)) {
 				const char *dirname = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN | NOC_FILE_DIALOG_DIR, NULL, NULL, NULL);
 				if (dirname)
-					saveWaves(dirname);
+					currentBank.saveWaves(dirname);
 			}
-			if (ImGui::MenuItem("Import Waves...", NULL, false, true)) importPopup = true;
+			if (ImGui::MenuItem("Import Audio...", NULL, false, true))
+				showImportPopup = true;
 
 			ImGui::EndMenu();
 		}
@@ -374,6 +390,7 @@ void renderMenuBar() {
 		ImGui::EndMenuBar();
 	}
 }
+
 
 void renderPreview() {
 	ImGui::Checkbox("Play", &playEnabled);
@@ -403,6 +420,7 @@ void renderPreview() {
 	}
 }
 
+
 void renderToolSelector(Tool *tool) {
 	if (ImGui::RadioButton("Pencil", *tool == PENCIL_TOOL)) *tool = PENCIL_TOOL;
 	ImGui::SameLine();
@@ -415,14 +433,16 @@ void renderToolSelector(Tool *tool) {
 	if (ImGui::RadioButton("Eraser", *tool == ERASER_TOOL)) *tool = ERASER_TOOL;
 }
 
+
 void effectSlider(EffectID effect) {
 	char id[64];
 	snprintf(id, sizeof(id), "##%s", effectNames[effect]);
 	char text[64];
 	snprintf(text, sizeof(text), "%s: %%.3f", effectNames[effect]);
 	if (ImGui::SliderFloat(id, &currentBank.waves[selectedWave].effects[effect], 0.0f, 1.0f, text))
-		updatePost(selectedWave);
+		currentBank.waves[selectedWave].updatePost();
 }
+
 
 void editorPage() {
 	ImGui::BeginChild("Sidebar", ImVec2(200, 0), true);
@@ -468,7 +488,7 @@ void editorPage() {
 
 		ImGui::SameLine();
 		if (ImGui::Button("Clear"))
-			setWave(selectedWave, NULL);
+			currentBank.waves[selectedWave].clear();
 
 		for (WaveDirectory &waveDirectory : waveDirectories) {
 			ImGui::SameLine();
@@ -476,7 +496,7 @@ void editorPage() {
 			if (ImGui::BeginPopup(waveDirectory.name.c_str())) {
 				for (WaveFile &waveFile : waveDirectory.waveFiles) {
 					if (ImGui::Selectable(waveFile.name.c_str())) {
-						setWave(selectedWave, waveFile.samples);
+						// TODO
 					}
 				}
 				ImGui::EndPopup();
@@ -488,35 +508,41 @@ void editorPage() {
 
 		const int oversample = 4;
 		float waveOversample[WAVE_LEN * oversample];
-		computeOversample(wave->postSamples, waveOversample, WAVE_LEN, oversample);
+		cyclicOversample(wave->postSamples, waveOversample, WAVE_LEN, oversample);
 		if (renderWave("we1", 200.0, wave->samples, WAVE_LEN, waveOversample, WAVE_LEN * oversample, tool)) {
-			commitWave(selectedWave);
+			currentBank.waves[selectedWave].commitSamples();
 		}
 
 		if (renderHistogram("he1", 200.0, wave->harmonics, WAVE_LEN / 2, wave->postHarmonics, WAVE_LEN / 2, tool)) {
-			commitHarmonics(selectedWave);
+			currentBank.waves[selectedWave].commitHarmonics();
 		}
 
 		for (int i = 0; i < EFFECTS_LEN; i++) {
 			effectSlider((EffectID) i);
 		}
 
-		if (ImGui::Checkbox("Cycle", &currentBank.waves[selectedWave].cycle)) updatePost(selectedWave);
+		if (ImGui::Checkbox("Cycle", &currentBank.waves[selectedWave].cycle))
+			currentBank.waves[selectedWave].updatePost();
 		ImGui::SameLine();
-		if (ImGui::Checkbox("Normalize", &currentBank.waves[selectedWave].normalize)) updatePost(selectedWave);
+		if (ImGui::Checkbox("Normalize", &currentBank.waves[selectedWave].normalize))
+			currentBank.waves[selectedWave].updatePost();
 
 		ImGui::SameLine();
-		if (ImGui::Button("Apply")) bakeEffect(selectedWave);
+		if (ImGui::Button("Apply"))
+			currentBank.waves[selectedWave].bakeEffects();
 		ImGui::SameLine();
-		if (ImGui::Button("Randomize")) randomizeEffect(selectedWave);
+		if (ImGui::Button("Randomize"))
+			currentBank.waves[selectedWave].randomizeEffects();
 		ImGui::SameLine();
-		if (ImGui::Button("Cancel")) clearEffect(selectedWave);
+		if (ImGui::Button("Cancel"))
+			currentBank.waves[selectedWave].clearEffects();
 		// if (ImGui::Button("Dump to WAV")) saveBank("out.wav");
 
 		ImGui::PopItemWidth();
 	}
 	ImGui::EndChild();
 }
+
 
 void effectHistogram(EffectID effect, Tool tool) {
 	float value[BANK_LEN];
@@ -527,13 +553,14 @@ void effectHistogram(EffectID effect, Tool tool) {
 	if (renderHistogram(effectNames[effect], 80, value, BANK_LEN, NULL, 0, tool)) {
 		for (int i = 0; i < BANK_LEN; i++) {
 			if (currentBank.waves[i].effects[effect] != value[i]) {
-				updatePost(i);
+				currentBank.waves[selectedWave].updatePost();
 				selectWave(i);
 				currentBank.waves[i].effects[effect] = value[i];
 			}
 		}
 	}
 }
+
 
 void effectPage() {
 	ImGui::BeginChild("Effect Editor", ImVec2(0, 0), true); {
@@ -549,53 +576,55 @@ void effectPage() {
 		if (ImGui::Button("Normalize All")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].normalize = true;
-				updatePost(i);
+				currentBank.waves[i].updatePost();
 			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Normalize None")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].normalize = false;
-				updatePost(i);
+				currentBank.waves[i].updatePost();
 			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Cycle All")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].cycle = true;
-				updatePost(i);
+				currentBank.waves[i].updatePost();
 			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Cycle None")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].cycle = false;
-				updatePost(i);
+				currentBank.waves[i].updatePost();
 			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Randomize")) {
 			for (int i = 0; i < BANK_LEN; i++) {
-				randomizeEffect(i);
+				currentBank.waves[i].randomizeEffects();
 			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Clear")) {
 			for (int i = 0; i < BANK_LEN; i++) {
-				clearEffect(i);
+				currentBank.waves[i].clearEffects();
 			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Apply")) {
 			for (int i = 0; i < BANK_LEN; i++) {
-				bakeEffect(i);
+				currentBank.waves[i].bakeEffects();
 			}
 		}
 	}
 	ImGui::EndChild();
 }
 
+
 void gridPage() {}
+
 
 void _3DViewPage() {
 	ImGui::BeginChild("3D View", ImVec2(0, 0), true);
@@ -609,65 +638,90 @@ void _3DViewPage() {
 	ImGui::EndChild();
 }
 
-void renderImport() {
+
+void importPopup() {
 	static float offsetPercent;
 	static float zoom;
-	static enum {
-		OVERWRITE, CLEAR, ADD, MULTIPLY,
-	} mode;
-	static float *audio;
-	static int audioLength;
+	static ImportMode mode;
+	static float *audio = NULL;
+	static int audioLen;
+	static Bank newBank;
+
+	const int audioLengthMin = 32;
+	const int audioLengthMax = 1<<19;
 
 	// Open popup and reset state
-	if (importPopup) {
-		importPopup = false;
+	if (showImportPopup) {
+		showImportPopup = false;
 		const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
 		if (filename) {
-			audio = loadAudio(filename, &audioLength);
 			offsetPercent = 0.0;
 			zoom = 1.0;
-			mode = OVERWRITE;
-			ImGui::OpenPopup("Import");
+			mode = OVERWRITE_IMPORT;
+			audio = loadAudio(filename, &audioLen);
+			if (audioLengthMin <= audioLen && audioLen <= audioLengthMax)
+				ImGui::OpenPopup("Import");
+			else
+				ImGui::OpenPopup("Import Error");
 		}
 	}
+	ImGui::SetNextWindowContentWidth(800.0);
 	if (ImGui::BeginPopupModal("Import", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
+		ImGui::PushItemWidth(-1.0);
+		// Import samples
+		newBank = currentBank;
+		newBank.importSamples(audio, audioLen, offsetPercent / 100.0, mode);
 		// Wave view
-		renderWave("imported", 100, NULL, 0, audio, audioLength, NO_TOOL);
+		float samples[BANK_LEN * WAVE_LEN];
+		newBank.getSamples(samples);
+		renderWave("##importSamples", 100, NULL, 0, samples, BANK_LEN * WAVE_LEN, NO_TOOL);
 
 		// Parameters
-		ImGui::PushItemWidth(-1.0);
 		ImGui::SliderFloat("##offsetPercent", &offsetPercent, 0.0, 100.0, "Offset: %.2f%%");
 		ImGui::SliderFloat("##zoom", &zoom, 1.0, 100.0, "Zoom: %.2f", 2.0);
 
 		// Modes
-		if (ImGui::RadioButton("Overwrite", mode == OVERWRITE)) mode = OVERWRITE;
+		if (ImGui::RadioButton("Overwrite", mode == OVERWRITE_IMPORT)) mode = OVERWRITE_IMPORT;
 		ImGui::SameLine();
-		if (ImGui::RadioButton("Clear", mode == CLEAR)) mode = CLEAR;
+		if (ImGui::RadioButton("Loop", mode == LOOP_IMPORT)) mode = LOOP_IMPORT;
 		ImGui::SameLine();
-		if (ImGui::RadioButton("Mix", mode == ADD)) mode = ADD;
+		if (ImGui::RadioButton("Clear", mode == CLEAR_IMPORT)) mode = CLEAR_IMPORT;
 		ImGui::SameLine();
-		if (ImGui::RadioButton("Ring Modulate", mode == MULTIPLY)) mode = MULTIPLY;
+		if (ImGui::RadioButton("Mix", mode == ADD_IMPORT)) mode = ADD_IMPORT;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Ring Modulate", mode == MULTIPLY_IMPORT)) mode = MULTIPLY_IMPORT;
 
 		// Buttons
 		bool cleanup = false;
 
 		if (ImGui::Button("Cancel")) {
-			cleanup = true;
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Import")) {
-			cleanup = true;
+			historyPush();
+			currentBank = newBank;
 			ImGui::CloseCurrentPopup();
 		}
+		ImGui::EndPopup();
+	}
+	else {
+		// Cleanup if window is closed
+		if (audio) {
+			delete[] audio;
+			audio = NULL;
+		}
+	}
 
-		if (cleanup) {
-			if (audio)
-				free(audio);
+	if (ImGui::BeginPopupModal("Import Error", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
+		ImGui::Text("Could not import audio, or file is too long or short");
+		if (ImGui::Button("OK")) {
+			ImGui::CloseCurrentPopup();
 		}
 		ImGui::EndPopup();
 	}
 }
+
 
 void renderMain() {
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -698,7 +752,7 @@ void renderMain() {
 		}
 
 		// Modals
-		renderImport();
+		importPopup();
 	}
 	ImGui::End();
 
@@ -706,6 +760,7 @@ void renderMain() {
 		ImGui::ShowTestWindow(&showTestWindow);
 	}
 }
+
 
 void initStyle() {
 	ImGuiStyle& style = ImGui::GetStyle();
@@ -766,13 +821,14 @@ void initStyle() {
 	io.Fonts->AddFontFromFileTTF("fonts/Lekton-Regular.ttf", 15.0);
 }
 
+
 void uiInit() {
 	ImGui::GetIO().IniFilename = NULL;
 
 	initStyle();
 	logoTexture = loadImage("logo-white.png");
-
 }
+
 
 void uiRender() {
 	renderMain();

@@ -1,4 +1,6 @@
 #include "WaveEdit.hpp"
+#include <string.h>
+#include <sndfile.h>
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -20,4 +22,39 @@ void openBrowser(const char *url) {
 #if defined(_WIN32)
 	ShellExecute(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL);
 #endif
+}
+
+
+float *loadAudio(const char *filename, int *length) {
+	SF_INFO info;
+	SNDFILE *sf = sf_open(filename, SFM_READ, &info);
+	if (!sf)
+		return NULL;
+
+	// Get length of audio
+	int len = sf_seek(sf, 0, SEEK_END);
+	if (len <= 0)
+		return NULL;
+	sf_seek(sf, 0, SEEK_SET);
+	float *samples = new float[len];
+
+	int pos = 0;
+	while (pos < len) {
+		const int bufferLen = 1024;
+		float buffer[bufferLen * info.channels];
+		int frames = sf_readf_float(sf, buffer, bufferLen);
+		for (int i = 0; i < frames; i++) {
+			float sample = 0.0;
+			for (int c = 0; c < info.channels; c++) {
+				sample += buffer[i * info.channels + c];
+			}
+			samples[pos] = sample;
+			pos++;
+		}
+	}
+
+	sf_close(sf);
+	if (length)
+		*length = len;
+	return samples;
 }
