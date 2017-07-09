@@ -32,11 +32,6 @@ void audioCallback(void *userdata, Uint8 *stream, int len) {
 		float gain = powf(10.0, playVolume / 20.0);
 		double ratio = (double)audioSpec.freq / WAVE_LEN / playFrequencySmooth;
 
-		const float lambdaMorph = 0.5;
-		morphXSmooth = crossf(morphXSmooth, clampf(morphX, 0.0, BANK_GRID_WIDTH - 1), lambdaMorph);
-		morphYSmooth = crossf(morphYSmooth, clampf(morphY, 0.0, BANK_GRID_HEIGHT - 1), lambdaMorph);
-		morphZSmooth = crossf(morphZSmooth, clampf(morphZ, 0.0, BANK_LEN - 1), lambdaMorph);
-
 		int outPos = 0;
 		while (outPos < outLen) {
 			// Generate next samples
@@ -44,6 +39,11 @@ void audioCallback(void *userdata, Uint8 *stream, int len) {
 			int inLen = 64;
 			float in[inLen];
 			for (int i = 0; i < inLen; i++) {
+				const float lambdaMorph = fminf(0.5 / playFrequency, 0.5);
+				morphXSmooth = crossf(morphXSmooth, clampf(morphX, 0.0, BANK_GRID_WIDTH - 1), lambdaMorph);
+				morphYSmooth = crossf(morphYSmooth, clampf(morphY, 0.0, BANK_GRID_HEIGHT - 1), lambdaMorph);
+				morphZSmooth = crossf(morphZSmooth, clampf(morphZ, 0.0, BANK_LEN - 1), lambdaMorph);
+
 				int index = (playIndex + i) % WAVE_LEN;
 				if (playModeXY) {
 					int xi = morphXSmooth;

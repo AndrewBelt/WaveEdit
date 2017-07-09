@@ -344,6 +344,7 @@ void renderMenuBar() {
 			if (ImGui::MenuItem("New Bank")) {
 				historyPush();
 				currentBank.clear();
+				lastFilename[0] = '\0';
 			}
 			if (ImGui::MenuItem("Open Bank...")) {
 				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
@@ -640,7 +641,8 @@ void _3DViewPage() {
 
 
 void importPopup() {
-	static float offsetPercent;
+	static float gain;
+	static float offset;
 	static float zoom;
 	static ImportMode mode;
 	static float *audio = NULL;
@@ -648,16 +650,17 @@ void importPopup() {
 	static Bank newBank;
 
 	const int audioLengthMin = 32;
-	const int audioLengthMax = 1<<19;
+	const int audioLengthMax = 44100*20;
 
 	// Open popup and reset state
 	if (showImportPopup) {
 		showImportPopup = false;
-		const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
+		const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "Audio File\0*\0", NULL, NULL);
 		if (filename) {
-			offsetPercent = 0.0;
-			zoom = 1.0;
-			mode = OVERWRITE_IMPORT;
+			offset = 0.0;
+			zoom = 0.0;
+			gain = 0.0;
+			mode = CLEAR_IMPORT;
 			audio = loadAudio(filename, &audioLen);
 			if (audioLengthMin <= audioLen && audioLen <= audioLengthMax)
 				ImGui::OpenPopup("Import");
@@ -668,24 +671,32 @@ void importPopup() {
 	ImGui::SetNextWindowContentWidth(800.0);
 	if (ImGui::BeginPopupModal("Import", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
 		ImGui::PushItemWidth(-1.0);
+
 		// Import samples
 		newBank = currentBank;
-		newBank.importSamples(audio, audioLen, offsetPercent / 100.0, mode);
+		newBank.importSamples(audio, audioLen, powf(10.0, gain / 20.0), offset, zoom, mode);
 		// Wave view
 		float samples[BANK_LEN * WAVE_LEN];
 		newBank.getSamples(samples);
 		renderWave("##importSamples", 100, NULL, 0, samples, BANK_LEN * WAVE_LEN, NO_TOOL);
 
 		// Parameters
-		ImGui::SliderFloat("##offsetPercent", &offsetPercent, 0.0, 100.0, "Offset: %.2f%%");
-		ImGui::SliderFloat("##zoom", &zoom, 1.0, 100.0, "Zoom: %.2f", 2.0);
+		if (ImGui::Button("Reset Gain")) gain = 0.0;
+		ImGui::SameLine();
+		ImGui::SliderFloat("##gain", &gain, -40.0, 40.0, "Gain: %.2fdB");
+
+		if (ImGui::Button("Reset Offset")) offset = 0.0;
+		ImGui::SameLine();
+		ImGui::SliderFloat("##offset", &offset, -1.0, 1.0, "Offset: %.4f");
+
+		if (ImGui::Button("Reset Zoom")) zoom = 0.0;
+		ImGui::SameLine();
+		ImGui::SliderFloat("##zoom", &zoom, -7.0, 7.0, "Zoom: %.2f");
 
 		// Modes
-		if (ImGui::RadioButton("Overwrite", mode == OVERWRITE_IMPORT)) mode = OVERWRITE_IMPORT;
-		ImGui::SameLine();
-		if (ImGui::RadioButton("Loop", mode == LOOP_IMPORT)) mode = LOOP_IMPORT;
-		ImGui::SameLine();
 		if (ImGui::RadioButton("Clear", mode == CLEAR_IMPORT)) mode = CLEAR_IMPORT;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Overwrite", mode == OVERWRITE_IMPORT)) mode = OVERWRITE_IMPORT;
 		ImGui::SameLine();
 		if (ImGui::RadioButton("Mix", mode == ADD_IMPORT)) mode = ADD_IMPORT;
 		ImGui::SameLine();

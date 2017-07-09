@@ -112,6 +112,7 @@ float *loadAudio(const char *filename, int *length);
 
 enum EffectID {
 	PRE_GAIN,
+	TEMPORAL_SHIFT,
 	HARMONIC_SHIFT,
 	COMB,
 	RING,
@@ -143,7 +144,7 @@ struct Wave {
 	bool normalize;
 
 	void clear();
-	/** Generates post*** arrays from the sample array, by applying effects */
+	/** Generates post arrays from the sample array, by applying effects */
 	void updatePost();
 	void commitSamples();
 	void commitHarmonics();
@@ -164,11 +165,10 @@ struct Wave {
 #define BANK_GRID_HEIGHT 8
 
 enum ImportMode {
-	OVERWRITE_IMPORT,
 	CLEAR_IMPORT,
+	OVERWRITE_IMPORT,
 	ADD_IMPORT,
 	MULTIPLY_IMPORT,
-	LOOP_IMPORT,
 };
 
 struct Bank {
@@ -177,7 +177,7 @@ struct Bank {
 	void clear();
 	void setSamples(const float *in);
 	void getSamples(float *out);
-	void importSamples(const float *in, int inLen, float offset, ImportMode mode);
+	void importSamples(const float *in, int inLen, float gain, float offset, float zoom, ImportMode mode);
 	void save(const char *filename);
 	void load(const char *filename);
 	/** Saves each wave to its own file in a directory */

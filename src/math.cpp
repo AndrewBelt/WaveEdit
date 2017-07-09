@@ -4,15 +4,20 @@
 #include <samplerate.h>
 
 
-void RFFT(const float *in, float *out, int len) {
+static void FFT(const float *in, float *out, int len, bool inverse) {
 	PFFFT_Setup *setup = pffft_new_setup(len, PFFFT_REAL);
 	float *work = NULL;
 	if (len >= 4096)
-		work = new float[len];
-	pffft_transform_ordered(setup, in, out, work, PFFFT_FORWARD);
+		work = (float*)pffft_aligned_malloc(sizeof(float) * len);
+	pffft_transform_ordered(setup, in, out, work, inverse ? PFFFT_BACKWARD : PFFFT_FORWARD);
 	pffft_destroy_setup(setup);
 	if (work)
-		delete[] work;
+		pffft_aligned_free(work);
+}
+
+
+void RFFT(const float *in, float *out, int len) {
+	FFT(in, out, len, false);
 
 	float a = 1.0 / len;
 	for (int i = 0; i < len; i++) {
@@ -20,15 +25,9 @@ void RFFT(const float *in, float *out, int len) {
 	}
 }
 
+
 void IRFFT(const float *in, float *out, int len) {
-	PFFFT_Setup *setup = pffft_new_setup(len, PFFFT_REAL);
-	float *work = NULL;
-	if (len >= 4096)
-		work = new float[len];
-	pffft_transform_ordered(setup, in, out, work, PFFFT_BACKWARD);
-	pffft_destroy_setup(setup);
-	if (work)
-		delete[] work;
+	FFT(in, out, len, true);
 }
 
 
@@ -46,7 +45,7 @@ int resample(const float *in, int inLen, float *out, int outLen, double ratio) {
 
 
 void cyclicOversample(const float *in, float *out, int len, int oversample) {
-	float *x = new float[len * oversample]();
+	float x[len * oversample] = {};
 	// Zero-stuff oversampled buffer
 	for (int i = 0; i < len; i++) {
 		x[i * oversample] = in[i] * oversample;

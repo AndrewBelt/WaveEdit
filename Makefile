@@ -1,9 +1,9 @@
 VERSION = v0.4
 
 FLAGS = -Wall -g -Wno-unused -O2 -msse -mfpmath=sse -ffast-math \
-	-DARCH=$(ARCH) -DVERSION=$(VERSION) \
+	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
 	-I. -Iimgui -Inoc \
-	$(shell pkg-config --cflags --static sdl2) \
+	$(shell pkg-config --cflags sdl2) \
 	$(shell pkg-config --cflags samplerate) \
 	$(shell pkg-config --cflags sndfile)
 CFLAGS =

@@ -5,6 +5,7 @@
 
 const char *effectNames[EFFECTS_LEN] {
 	"Pre-Gain",
+	"Temporal Shift",
 	"Harmonic Shift",
 	"Comb Filter",
 	"Ring Modulation",
@@ -35,16 +36,16 @@ void Wave::updatePost() {
 		}
 	}
 
-	// Harmonic Shift
-	if (effects[HARMONIC_SHIFT] > 0.0) {
+	// Temporal and Harmonic Shift
+	if (effects[TEMPORAL_SHIFT] > 0.0 || effects[HARMONIC_SHIFT] > 0.0) {
 		// Shift Fourier phase proportionally
 		float tmp[WAVE_LEN];
 		RFFT(out, tmp, WAVE_LEN);
-		float phase = clampf(effects[HARMONIC_SHIFT], 0.0, 1.0);
-		float br = cosf(2 * M_PI * phase);
-		float bi = sinf(2 * M_PI * phase);
-		for (int i = 0; i < WAVE_LEN / 2; i++) {
-			cmultf(&tmp[2 * i], &tmp[2 * i + 1], tmp[2 * i], tmp[2 * i + 1], br, bi);
+		for (int k = 0; k < WAVE_LEN / 2; k++) {
+			float phase = clampf(effects[HARMONIC_SHIFT], 0.0, 1.0) + clampf(effects[TEMPORAL_SHIFT], 0.0, 1.0) * k;
+			float br = cosf(2 * M_PI * phase);
+			float bi = -sinf(2 * M_PI * phase);
+			cmultf(&tmp[2 * k], &tmp[2 * k + 1], tmp[2 * k], tmp[2 * k + 1], br, bi);
 		}
 		IRFFT(tmp, out, WAVE_LEN);
 	}

@@ -48,7 +48,7 @@ float *loadAudio(const char *filename, int *length) {
 			for (int c = 0; c < info.channels; c++) {
 				sample += buffer[i * info.channels + c];
 			}
-			samples[pos] = sample;
+			samples[pos] = sample / info.channels;
 			pos++;
 		}
 	}

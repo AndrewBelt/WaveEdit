@@ -28,12 +28,56 @@ void Bank::getSamples(float *out) {
 }
 
 
-void Bank::importSamples(const float *in, int inLen, float offset, ImportMode mode) {
-	float inResampled[BANK_LEN * WAVE_LEN];
-	double ratio = (double) BANK_LEN * WAVE_LEN / inLen;
-	resample(in, inLen, inResampled, BANK_LEN * WAVE_LEN, ratio);
-	setSamples(inResampled);
-	// TODO
+void Bank::importSamples(const float *in, int inLen, float gain, float offset, float zoom, ImportMode mode) {
+	zoom = clampf(zoom, -8.0, 8.0);
+	const int outLen = BANK_LEN * WAVE_LEN;
+	// A bunch of weird constants to align the resampler correctly
+	float X = inLen;
+	float X0 = X / 2.0;
+	float W = powf(2.0, -zoom) * inLen;
+	float W0 = X0 - offset * (W + X) / 2.0;
+	float Wl = W0 - W / 2.0;
+	float Wr = W0 + W / 2.0;
+	float Xl = clampf(Wl, 0, X);
+	float Xr = clampf(Wr, 0, X);
+	float Y = outLen;
+	float Yl = rescalef(Xl, Wl, Wr, 0, Y);
+	float Yr = rescalef(Xr, Wl, Wr, 0, Y);
+	Yl = clampf(Yl, 0, Y);
+	Yr = clampf(Yr, 0, Y);
+	Xl = rescalef(Yl, 0, Y, Wl, Wr);
+	Xr = rescalef(Yr, 0, Y, Wl, Wr);
+	int Xli = roundf(Xl);
+	int Xri = roundf(Xr);
+	int Yli = roundf(Yl);
+	int Yri = roundf(Yr);
+	float out[outLen] = {};
+	float ratio = clampf(Y / W, 1/300.0, 300.0);
+	resample(in + Xli, Xri - Xli, out + Yli, Yri - Yli, ratio);
+
+	// Import to each wave
+	for (int j = 0; j < BANK_LEN; j++) {
+		for (int i = 0; i < WAVE_LEN; i++) {
+			int index = j * WAVE_LEN + i;
+			switch (mode) {
+				case CLEAR_IMPORT:
+					waves[j].samples[i] = gain * out[index];
+					break;
+				case OVERWRITE_IMPORT:
+					if (Yl <= index && index <= Yr)
+						waves[j].samples[i] = gain * out[index];
+					break;
+				case ADD_IMPORT:
+					waves[j].samples[i] += gain * out[index];
+					break;
+				case MULTIPLY_IMPORT:
+					waves[j].samples[i] *= gain * out[index];
+					break;
+			}
+
+		}
+		waves[j].commitSamples();
+	}
 }
 
 
