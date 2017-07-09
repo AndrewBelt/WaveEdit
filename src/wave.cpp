@@ -252,6 +252,8 @@ void Wave::commitHarmonics() {
 
 void Wave::clearEffects() {
 	memset(effects, 0, sizeof(float) * EFFECTS_LEN);
+	cycle = false;
+	normalize = false;
 	updatePost();
 }
 

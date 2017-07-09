@@ -547,16 +547,40 @@ void editorPage() {
 
 void effectHistogram(EffectID effect, Tool tool) {
 	float value[BANK_LEN];
+	float average = 0.0;
 	for (int i = 0; i < BANK_LEN; i++) {
 		value[i] = currentBank.waves[i].effects[effect];
+		average += value[i];
 	}
+	average /= BANK_LEN;
+	float oldAverage = average;
+
 	ImGui::Text(effectNames[effect]);
-	if (renderHistogram(effectNames[effect], 80, value, BANK_LEN, NULL, 0, tool)) {
+
+	char id[64];
+	snprintf(id, sizeof(id), "##%sAverage", effectNames[effect]);
+	char text[64];
+	snprintf(text, sizeof(text), "Average %s: %%.3f", effectNames[effect]);
+	if (ImGui::SliderFloat(id, &average, 0.0f, 1.0f, text)) {
+		// Change the average effect level to the new average
+		float deltaAverage = average - oldAverage;
+		for (int i = 0; i < BANK_LEN; i++) {
+			if (0.0 < average && average < 1.0) {
+				currentBank.waves[i].effects[effect] = clampf(currentBank.waves[i].effects[effect] + deltaAverage, 0.0, 1.0);
+			}
+			else {
+				currentBank.waves[i].effects[effect] = average;
+			}
+			currentBank.waves[i].updatePost();
+		}
+	}
+
+	if (renderHistogram(effectNames[effect], 120, value, BANK_LEN, NULL, 0, tool)) {
 		for (int i = 0; i < BANK_LEN; i++) {
 			if (currentBank.waves[i].effects[effect] != value[i]) {
-				currentBank.waves[selectedWave].updatePost();
 				selectWave(i);
 				currentBank.waves[i].effects[effect] = value[i];
+				currentBank.waves[i].updatePost();
 			}
 		}
 	}
@@ -624,7 +648,25 @@ void effectPage() {
 }
 
 
-void gridPage() {}
+void gridPage() {
+	ImGui::BeginChild("Grid Page", ImVec2(0, 0), true);
+	{
+		ImGui::PushItemWidth(-1.0);
+		float width = ImGui::CalcItemWidth() / BANK_GRID_WIDTH - ImGui::GetStyle().FramePadding.y;
+		ImGui::PushItemWidth(width);
+
+		for (int y = 0; y < BANK_GRID_HEIGHT; y++) {
+			for (int x = 0; x < BANK_GRID_WIDTH; x++) {
+				int index = y * BANK_GRID_WIDTH + x;
+				Wave *wave = &currentBank.waves[index];
+				if (x > 0)
+					ImGui::SameLine();
+				renderWave("##gridwave", 80.0, NULL, 0, wave->samples, WAVE_LEN, NO_TOOL);
+			}
+		}
+	}
+	ImGui::EndChild();
+}
 
 
 void _3DViewPage() {

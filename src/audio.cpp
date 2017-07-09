@@ -39,7 +39,7 @@ void audioCallback(void *userdata, Uint8 *stream, int len) {
 			int inLen = 64;
 			float in[inLen];
 			for (int i = 0; i < inLen; i++) {
-				const float lambdaMorph = fminf(0.5 / playFrequency, 0.5);
+				const float lambdaMorph = fminf(0.1 / playFrequency, 0.5);
 				morphXSmooth = crossf(morphXSmooth, clampf(morphX, 0.0, BANK_GRID_WIDTH - 1), lambdaMorph);
 				morphYSmooth = crossf(morphYSmooth, clampf(morphY, 0.0, BANK_GRID_HEIGHT - 1), lambdaMorph);
 				morphZSmooth = crossf(morphZSmooth, clampf(morphZ, 0.0, BANK_LEN - 1), lambdaMorph);

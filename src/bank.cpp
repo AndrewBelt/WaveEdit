@@ -99,6 +99,8 @@ void Bank::save(const char *filename) {
 
 
 void Bank::load(const char *filename) {
+	clear();
+
 	SF_INFO info;
 	SNDFILE *sf = sf_open(filename, SFM_READ, &info);
 	if (!sf)
