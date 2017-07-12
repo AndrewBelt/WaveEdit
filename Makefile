@@ -1,6 +1,6 @@
 VERSION = v0.4
 
-FLAGS = -Wall -Wextra -g -Wno-unused -O2 -msse -mfpmath=sse -ffast-math \
+FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O2 -msse -mfpmath=sse -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
 	-I. -Iimgui -Inoc \
 	$(shell pkg-config --cflags sdl2) \
@@ -36,7 +36,7 @@ ifneq (,$(findstring linux,$(MACHINE)))
 else ifneq (,$(findstring apple,$(MACHINE)))
 	# Mac
 	ARCH = mac
-	FLAGS += -DARCH_MAC
+	FLAGS += -DARCH_MAC -mmacosx-version-min=10.7
 	CXXFLAGS += -stdlib=libc++
 	LDFLAGS += -stdlib=libc++ -lpthread -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
 		$(shell pkg-config --libs sdl2) \
@@ -67,7 +67,11 @@ run: WaveEdit
 	./WaveEdit
 
 debug: WaveEdit
+ifeq ($(ARCH),mac)
+	lldb ./WaveEdit
+else
 	gdb -ex 'run' ./WaveEdit
+endif
 
 WaveEdit: $(OBJECTS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
