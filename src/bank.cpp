@@ -82,6 +82,30 @@ void Bank::importSamples(const float *in, int inLen, float gain, float offset, f
 
 
 void Bank::save(const char *filename) {
+	FILE *f = fopen(filename, "wb");
+	if (!f)
+		return;
+	fwrite(this, sizeof(*this), 1, f);
+	fclose(f);
+}
+
+
+void Bank::load(const char *filename) {
+	clear();
+
+	FILE *f = fopen(filename, "rb");
+	if (!f)
+		return;
+	fread(this, sizeof(*this), 1, f);
+	fclose(f);
+
+	for (int j = 0; j < BANK_LEN; j++) {
+		waves[j].commitSamples();
+	}
+}
+
+
+void Bank::saveWAV(const char *filename) {
 	SF_INFO info;
 	info.samplerate = 44100;
 	info.channels = 1;
@@ -98,7 +122,7 @@ void Bank::save(const char *filename) {
 }
 
 
-void Bank::load(const char *filename) {
+void Bank::loadWAV(const char *filename) {
 	clear();
 
 	SF_INFO info;

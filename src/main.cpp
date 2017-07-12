@@ -54,15 +54,16 @@ int main(int argc, char **argv) {
 	assert(window);
 	SDL_SetWindowMinimumSize(window, 800, 600);
 	SDL_GLContext glContext = SDL_GL_CreateContext(window);
-	SDL_GL_SetSwapInterval(1);
+	// Disable V-Sync
+	SDL_GL_SetSwapInterval(0);
 
 	// Set up Imgui binding
 	ImGui_ImplSdl_Init(window);
 
 	// Initialize modules
 	uiInit();
-	currentBank.clear();
-	wavesInit();
+	currentBank.load("autosave.dat");
+	catalogInit();
 	audioInit();
 
 	// Main loop
@@ -89,6 +90,8 @@ int main(int argc, char **argv) {
 		ImGui::Render();
 		SDL_GL_SwapWindow(window);
 	}
+
+	currentBank.save("autosave.dat");
 
 	// Cleanup
 	ImGui_ImplSdl_Shutdown();

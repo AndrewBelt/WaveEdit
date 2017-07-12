@@ -1,8 +1,8 @@
 VERSION = v0.4
 
-FLAGS = -Wall -g -Wno-unused -O2 -msse -mfpmath=sse -ffast-math \
+FLAGS = -Wall -Wextra -g -Wno-unused -O2 -msse -mfpmath=sse -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
-	-I. -Iimgui -Inoc \
+	-I. -Iimgui -Inoc -Itinydir \
 	$(shell pkg-config --cflags sdl2) \
 	$(shell pkg-config --cflags samplerate) \
 	$(shell pkg-config --cflags sndfile)

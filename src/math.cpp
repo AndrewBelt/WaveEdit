@@ -45,7 +45,8 @@ int resample(const float *in, int inLen, float *out, int outLen, double ratio) {
 
 
 void cyclicOversample(const float *in, float *out, int len, int oversample) {
-	float x[len * oversample] = {};
+	float x[len * oversample];
+	memset(x, 0, sizeof(x));
 	// Zero-stuff oversampled buffer
 	for (int i = 0; i < len; i++) {
 		x[i * oversample] = in[i] * oversample;

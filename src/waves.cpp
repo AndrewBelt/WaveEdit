@@ -1,22 +1,23 @@
 #include "WaveEdit.hpp"
 
+#include <string.h>
 #include <dirent.h>
 
 
-std::vector<WaveDirectory> waveDirectories;
+std::vector<CatalogDirectory> catalogDirectories;
 
 
 static int filterCallback(const struct dirent *dir) {
+	// Filter files beginning with "."
 	if (dir->d_name[0] == '.')
 		return 0;
 	return 1;
 }
 
-void wavesInit() {
-	/*
+void catalogInit() {
 	struct dirent **directories;
-	const char *wavesDir = "waves";
-	int directoriesLen = scandir(wavesDir, &directories, filterCallback, alphasort);
+	const char *catalogDir = "waves";
+	int directoriesLen = scandir(catalogDir, &directories, filterCallback, alphasort);
 
 	for (int i = 0; i < directoriesLen; i++) {
 		// Skip digits at beginning of filename
@@ -25,14 +26,15 @@ void wavesInit() {
 		while (isdigit(*name))
 			name++;
 
-		WaveDirectory waveDirectory;
-		waveDirectory.name = name;
+		CatalogDirectory catalogDirectory;
+		catalogDirectory.name = name;
 
 		struct dirent **files;
 		char directoryPath[PATH_MAX];
-		snprintf(directoryPath, sizeof(directoryPath), "%s/%s", wavesDir, directories[i]->d_name);
+		snprintf(directoryPath, sizeof(directoryPath), "%s/%s", catalogDir, directories[i]->d_name);
 		int filesLen = scandir(directoryPath, &files, filterCallback, alphasort);
 		for (int i = 0; i < filesLen; i++) {
+			// Get the name without digits at the beginning
 			const char *name = files[i]->d_name;
 			while (isdigit(*name))
 				name++;
@@ -42,20 +44,26 @@ void wavesInit() {
 			while (*period != '\0' && *period != '.')
 				period++;
 
-			WaveFile waveFile;
-			waveFile.name = std::string(name, period - name);
+			CatalogFile catalogFile;
+			catalogFile.name = std::string(name, period - name);
 			char wavePath[PATH_MAX];
 			snprintf(wavePath, sizeof(wavePath), "%s/%s", directoryPath, files[i]->d_name);
 
-			loadWave(wavePath, waveFile.samples);
-			waveDirectory.waveFiles.push_back(waveFile);
+			int length;
+			float *samples = loadAudio(wavePath, &length);
+			if (samples) {
+				if (length == WAVE_LEN) {
+					memcpy(catalogFile.samples, samples, sizeof(float) * WAVE_LEN);
+					catalogDirectory.catalogFiles.push_back(catalogFile);
+				}
+				delete[] samples;
+			}
 			free(files[i]);
 		}
 		free(files);
 
-		waveDirectories.push_back(waveDirectory);
+		catalogDirectories.push_back(catalogDirectory);
 		free(directories[i]);
 	}
 	free(directories);
-	*/
 }

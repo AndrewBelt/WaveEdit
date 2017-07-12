@@ -40,7 +40,7 @@ float *loadAudio(const char *filename, int *length) {
 
 	int pos = 0;
 	while (pos < len) {
-		const int bufferLen = 1024;
+		const int bufferLen = 1<<12;
 		float buffer[bufferLen * info.channels];
 		int frames = sf_readf_float(sf, buffer, bufferLen);
 		for (int i = 0; i < frames; i++) {

@@ -178,8 +178,12 @@ struct Bank {
 	void setSamples(const float *in);
 	void getSamples(float *out);
 	void importSamples(const float *in, int inLen, float gain, float offset, float zoom, ImportMode mode);
+	/** Binary dump of the bank struct */
 	void save(const char *filename);
 	void load(const char *filename);
+	/** WAV file with BANK_LEN * WAVE_LEN samples */
+	void saveWAV(const char *filename);
+	void loadWAV(const char *filename);
 	/** Saves each wave to its own file in a directory */
 	void saveWaves(const char *dirname);
 };
@@ -197,22 +201,22 @@ extern Bank currentBank;
 
 
 ////////////////////
-// waves.cpp
+// catalog.cpp
 ////////////////////
 
-struct WaveFile {
+struct CatalogFile {
 	float samples[WAVE_LEN];
 	std::string name;
 };
 
-struct WaveDirectory {
-	std::vector<WaveFile> waveFiles;
+struct CatalogDirectory {
+	std::vector<CatalogFile> catalogFiles;
 	std::string name;
 };
 
-extern std::vector<WaveDirectory> waveDirectories;
+extern std::vector<CatalogDirectory> catalogDirectories;
 
-void wavesInit();
+void catalogInit();
 
 
 ////////////////////
