@@ -90,6 +90,12 @@ else ifeq ($(ARCH),win)
 	cp WaveEdit.exe dist/WaveEdit
 	cp /mingw64/bin/libgcc_s_seh-1.dll dist/WaveEdit
 	cp /mingw64/bin/libsamplerate-0.dll dist/WaveEdit
+	cp /mingw64/bin/libsndfile-1.dll dist/WaveEdit
+	cp /mingw64/bin/libFLAC-8.dll dist/WaveEdit
+	cp /mingw64/bin/libogg-0.dll dist/WaveEdit
+	cp /mingw64/bin/libspeex-1.dll dist/WaveEdit
+	cp /mingw64/bin/libvorbis-0.dll dist/WaveEdit
+	cp /mingw64/bin/libvorbisenc-2.dll dist/WaveEdit
 	cp /mingw64/bin/libstdc++-6.dll dist/WaveEdit
 	cp /mingw64/bin/libwinpthread-1.dll dist/WaveEdit
 	cp /mingw64/bin/SDL2.dll dist/WaveEdit

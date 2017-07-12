@@ -7,17 +7,20 @@
 std::vector<CatalogDirectory> catalogDirectories;
 
 
+#ifndef ARCH_WIN
 static int filterCallback(const struct dirent *dir) {
 	// Filter files beginning with "."
 	if (dir->d_name[0] == '.')
 		return 0;
 	return 1;
 }
+#endif
 
 void catalogInit() {
+#ifndef ARCH_WIN
 	struct dirent **directories;
 	const char *catalogDir = "waves";
-	int directoriesLen = scandir(catalogDir, &directories, filterCallback, alphasort);
+	int directoriesLen = scandir(catalogDir, &directories, filterCallback, NULL);
 
 	for (int i = 0; i < directoriesLen; i++) {
 		// Skip digits at beginning of filename
@@ -32,7 +35,7 @@ void catalogInit() {
 		struct dirent **files;
 		char directoryPath[PATH_MAX];
 		snprintf(directoryPath, sizeof(directoryPath), "%s/%s", catalogDir, directories[i]->d_name);
-		int filesLen = scandir(directoryPath, &files, filterCallback, alphasort);
+		int filesLen = scandir(directoryPath, &files, filterCallback, NULL);
 		for (int i = 0; i < filesLen; i++) {
 			// Get the name without digits at the beginning
 			const char *name = files[i]->d_name;
@@ -66,4 +69,5 @@ void catalogInit() {
 		free(directories[i]);
 	}
 	free(directories);
+#endif
 }

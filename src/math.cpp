@@ -33,7 +33,8 @@ void IRFFT(const float *in, float *out, int len) {
 
 int resample(const float *in, int inLen, float *out, int outLen, double ratio) {
 	SRC_DATA data;
-	data.data_in = in;
+	// Old versions of libsamplerate don't use const here
+	data.data_in = (float*) in;
 	data.data_out = out;
 	data.input_frames = inLen;
 	data.output_frames = outLen;
