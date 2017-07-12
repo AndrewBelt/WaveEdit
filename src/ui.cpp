@@ -305,12 +305,13 @@ void renderWave3D(float height, const float *const *waves, int bankLen, int wave
 	ImVec2 waveOffset = ImVec2(5, -5);
 
 	for (int b = 0; b < bankLen; b++) {
-		ImVec2 points[waveLen];
+		ImVec2 *points = new ImVec2[waveLen];
 		for (int i = 0; i < waveLen; i++) {
 			float value = waves[b][i];
 			points[i] = ImVec2(rescalef(i, 0, waveLen - 1, inner.Min.x, inner.Max.x), rescalef(value, -1.0, 1.0, inner.Max.y - 200 + waveHeight, inner.Max.y - 200 - waveHeight) + 0.5 * i) + waveOffset * b;
 		}
 		window->DrawList->AddPolyline(points, waveLen, ImGui::GetColorU32(ImVec4(1.0, 0.8, 0.2, 1.0)), false, 0.1, true);
+		delete[] points;
 	}
 
 	ImGui::PopClipRect();
@@ -349,7 +350,7 @@ void renderMenuBar() {
 				lastFilename[0] = '\0';
 			}
 			if (ImGui::MenuItem("Open Bank...")) {
-				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV Bank\0*.wav\0", "./*", NULL);
+				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV Bank\0*.wav\0", NULL, NULL);
 				if (filename) {
 					historyPush();
 					currentBank.loadWAV(filename);
@@ -360,14 +361,14 @@ void renderMenuBar() {
 				currentBank.saveWAV(lastFilename);
 			}
 			if (ImGui::MenuItem("Save Bank As...")) {
-				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV Bank\0*.wav\0", "./*", NULL);
+				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV Bank\0*.wav\0", NULL, NULL);
 				if (filename) {
 					currentBank.saveWAV(filename);
 					snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
 				}
 			}
 			if (ImGui::MenuItem("Save Waves To Folder...", NULL, false, true)) {
-				const char *dirname = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN | NOC_FILE_DIALOG_DIR, NULL, "./*", NULL);
+				const char *dirname = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN | NOC_FILE_DIALOG_DIR, NULL, NULL, NULL);
 				if (dirname)
 					currentBank.saveWaves(dirname);
 			}
@@ -723,7 +724,7 @@ void importPopup() {
 	// Open popup and reset state
 	if (showImportPopup) {
 		showImportPopup = false;
-		const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "Audio File\0*\0", "./*", NULL);
+		const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, NULL, NULL, NULL);
 		if (filename) {
 			offset = 0.0;
 			zoom = 0.0;

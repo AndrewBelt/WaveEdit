@@ -1,8 +1,8 @@
 VERSION = v0.4
 
-FLAGS = -Wall -Wextra -g -Wno-unused -O2 -msse -mfpmath=sse -ffast-math \
+FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O2 -msse -mfpmath=sse -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
-	-I. -Iimgui -Inoc -Itinydir \
+	-I. -Iimgui -Inoc \
 	$(shell pkg-config --cflags sdl2) \
 	$(shell pkg-config --cflags samplerate) \
 	$(shell pkg-config --cflags sndfile)
@@ -36,7 +36,7 @@ ifneq (,$(findstring linux,$(MACHINE)))
 else ifneq (,$(findstring apple,$(MACHINE)))
 	# Mac
 	ARCH = mac
-	FLAGS += -DARCH_MAC
+	FLAGS += -DARCH_MAC -mmacosx-version-min=10.7
 	CXXFLAGS += -stdlib=libc++
 	LDFLAGS += -stdlib=libc++ -lpthread -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
 		$(shell pkg-config --libs sdl2) \
@@ -67,7 +67,11 @@ run: WaveEdit
 	./WaveEdit
 
 debug: WaveEdit
+ifeq ($(ARCH),mac)
+	lldb ./WaveEdit
+else
 	gdb -ex 'run' ./WaveEdit
+endif
 
 WaveEdit: $(OBJECTS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
@@ -85,6 +89,11 @@ ifeq ($(ARCH),lin)
 	cp WaveEdit WaveEdit.sh dist/WaveEdit
 	cp /usr/lib/libSDL2-2.0.so.0 dist/WaveEdit
 	cp /usr/lib/libsamplerate.so.0 dist/WaveEdit
+	cp /usr/lib/libsndfile.so.1 dist/WaveEdit
+	cp /usr/lib/libFLAC.so.8 dist/WaveEdit
+	cp /usr/lib/libogg.so.0 dist/WaveEdit
+	cp /usr/lib/libvorbis.so.0 dist/WaveEdit
+	cp /usr/lib/libvorbisenc.so.2 dist/WaveEdit
 else ifeq ($(ARCH),win)
 	cp -R logo* fonts waves dist/WaveEdit
 	cp WaveEdit.exe dist/WaveEdit
