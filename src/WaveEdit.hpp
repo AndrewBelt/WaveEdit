@@ -1,9 +1,11 @@
 #pragma once
 
-#include <stdio.h>
-#include <math.h>
-#include <assert.h>
+#include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <assert.h>
+#include <math.h>
+
 #include <string>
 #include <thread>
 #include <vector>
@@ -209,12 +211,12 @@ struct CatalogFile {
 	std::string name;
 };
 
-struct CatalogDirectory {
-	std::vector<CatalogFile> catalogFiles;
+struct CatalogCategory {
+	std::vector<CatalogFile> files;
 	std::string name;
 };
 
-extern std::vector<CatalogDirectory> catalogDirectories;
+extern std::vector<CatalogCategory> catalogCategories;
 
 void catalogInit();
 
@@ -244,8 +246,37 @@ void audioDestroy();
 
 
 ////////////////////
+// widgets.cpp
+////////////////////
+
+enum Tool {
+	NO_TOOL,
+	PENCIL_TOOL,
+	BRUSH_TOOL,
+	GRAB_TOOL,
+	LINE_TOOL,
+	ERASER_TOOL,
+	SMOOTH_TOOL,
+	NUM_TOOLS
+};
+
+
+bool renderWave(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool = NO_TOOL);
+bool renderHistogram(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool);
+bool renderWaveGrid(const char *name, int gridWidth, int gridHeight, float **lines, int linesLen, float *gridX, float *gridY);
+void renderWave3D(float height, const float *const *waves, int bankLen, int waveLen);
+
+
+////////////////////
 // ui.cpp
 ////////////////////
 
 void uiInit();
 void uiRender();
+
+
+////////////////////
+// db.cpp
+////////////////////
+
+void dbPage();

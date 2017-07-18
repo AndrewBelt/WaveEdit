@@ -23,11 +23,13 @@ static int selectedWave = 0;
 static char lastFilename[1024] = "\0";
 
 static enum {
-	WAVEFORM_EDITOR = 0,
-	EFFECT_EDITOR,
-	GRID_VIEW,
-	_3D_VIEW,
-} currentPage = WAVEFORM_EDITOR;
+	EDITOR_PAGE = 0,
+	EFFECT_PAGE,
+	GRID_PAGE,
+	WATERFALL_PAGE,
+	DB_PAGE,
+	NUM_PAGES
+} currentPage = EDITOR_PAGE;
 
 
 static ImTextureID loadImage(const char *filename) {
@@ -63,259 +65,7 @@ void selectWave(int waveId) {
 }
 
 
-enum Tool {
-	NO_TOOL,
-	PENCIL_TOOL,
-	BRUSH_TOOL,
-	GRAB_TOOL,
-	LINE_TOOL,
-	ERASER_TOOL,
-	SMOOTH_TOOL,
-};
 
-
-void waveLine(float *points, int pointsLen, float startIndex, float endIndex, float startValue, float endValue) {
-	// Switch indices if out of order
-	if (startIndex > endIndex) {
-		float tmpIndex = startIndex;
-		startIndex = endIndex;
-		endIndex = tmpIndex;
-		float tmpValue = startValue;
-		startValue = endValue;
-		endValue = tmpValue;
-	}
-
-	int startI = maxi(0, roundf(startIndex));
-	int endI = mini(pointsLen - 1, roundf(endIndex));
-	for (int i = startI; i <= endI; i++) {
-		float frac = (startIndex < endIndex) ? rescalef(i, startIndex, endIndex, 0.0, 1.0) : 0.0;
-		points[i] = crossf(startValue, endValue, frac);
-	}
-}
-
-
-void waveSmooth(float *points, int pointsLen, float index) {
-	// TODO
-	for (int i = 0; i <= pointsLen - 1; i++) {
-		const float a = 0.05;
-		float w = expf(-a * powf(i - index, 2.0));
-		points[i] = clampf(points[i] + 0.01 * w, -1.0, 1.0);
-	}
-}
-
-
-void waveBrush(float *points, int pointsLen, float startIndex, float endIndex, float startValue, float endValue) {
-	const float sigma = 10.0;
-	for (int i = 0; i < pointsLen; i++) {
-		float x = i - startIndex;
-		// float a;
-		float a = expf(-x * x / (2.0 * sigma));
-		points[i] = crossf(points[i], startValue, a);
-	}
-}
-
-
-bool editorBehavior(ImGuiID id, const ImRect& box, const ImRect& inner, float *points, int pointsLen, float minIndex, float maxIndex, float minValue, float maxValue, enum Tool tool) {
-	ImGuiContext &g = *GImGui;
-	ImGuiWindow *window = ImGui::GetCurrentWindow();
-
-	bool hovered = ImGui::IsHovered(box, id);
-	if (hovered) {
-		ImGui::SetHoveredID(id);
-		if (g.IO.MouseClicked[0]) {
-			ImGui::SetActiveID(id, window);
-			ImGui::FocusWindow(window);
-			g.ActiveIdClickOffset = g.IO.MousePos - box.Min;
-		}
-	}
-
-	// Unhover
-	if (g.ActiveId == id) {
-		if (!g.IO.MouseDown[0]) {
-			ImGui::ClearActiveID();
-		}
-	}
-
-	// Tool behavior
-	if (g.ActiveId == id) {
-		if (g.IO.MouseDown[0]) {
-			if (tool == NO_TOOL)
-				return true;
-
-			ImVec2 pos = g.IO.MousePos;
-			ImVec2 lastPos = g.IO.MousePos - g.IO.MouseDelta;
-			ImVec2 originalPos = g.ActiveIdClickOffset + box.Min;
-			float originalIndex = rescalef(originalPos.x, inner.Min.x, inner.Max.x, minIndex, maxIndex);
-			float originalValue = rescalef(originalPos.y, inner.Min.y, inner.Max.y, minValue, maxValue);
-			float lastIndex = rescalef(lastPos.x, inner.Min.x, inner.Max.x, minIndex, maxIndex);
-			float lastValue = rescalef(lastPos.y, inner.Min.y, inner.Max.y, minValue, maxValue);
-			float index = rescalef(pos.x, inner.Min.x, inner.Max.x, minIndex, maxIndex);
-			float value = rescalef(pos.y, inner.Min.y, inner.Max.y, minValue, maxValue);
-
-			// Pencil tool
-			if (tool == PENCIL_TOOL) {
-				waveLine(points, pointsLen, lastIndex, index, lastValue, value);
-			}
-			// Grab tool
-			else if (tool == GRAB_TOOL) {
-				waveLine(points, pointsLen, originalIndex, originalIndex, value, value);
-			}
-			// Brush tool
-			else if (tool == BRUSH_TOOL) {
-				waveBrush(points, pointsLen, lastIndex, index, lastValue, value);
-			}
-			// Line tool
-			else if (tool == LINE_TOOL) {
-				// TODO Restore points from when it was originally clicked, using undo history
-				waveLine(points, pointsLen, originalIndex, index, originalValue, value);
-			}
-			// Eraser tool
-			else if (tool == ERASER_TOOL) {
-				waveLine(points, pointsLen, lastIndex, index, 0.0, 0.0);
-			}
-			// Smooth tool
-			else if (tool == SMOOTH_TOOL) {
-				waveSmooth(points, pointsLen, lastIndex);
-			}
-
-			for (int i = 0; i < pointsLen; i++) {
-				points[i] = clampf(points[i], fminf(minValue, maxValue), fmaxf(minValue, maxValue));
-			}
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
-
-bool renderWave(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool = NO_TOOL) {
-	ImGuiContext &g = *GImGui;
-	ImGuiWindow *window = ImGui::GetCurrentWindow();
-	const ImGuiStyle &style = g.Style;
-	const ImGuiID id = window->GetID(name);
-
-	// Compute positions
-	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
-	ImRect box = ImRect(window->DC.CursorPos, window->DC.CursorPos + size);
-	ImRect inner = ImRect(box.Min + style.FramePadding, box.Max - style.FramePadding);
-	ImGui::ItemSize(box, style.FramePadding.y);
-	if (!ImGui::ItemAdd(box, NULL))
-		return false;
-
-	// Draw frame
-	ImGui::RenderFrame(box.Min, box.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
-
-	// // Tooltip
-	// if (ImGui::IsHovered(box, 0)) {
-	// 	ImVec2 mousePos = ImGui::GetMousePos();
-	// 	float x = rescalef(mousePos.x, inner.Min.x, inner.Max.x, 0, pointsLen-1);
-	// 	int xi = (int)clampf(x, 0, pointsLen-2);
-	// 	float xf = x - xi;
-	// 	float y = crossf(values[xi], values[xi+1], xf);
-	// 	ImGui::SetTooltip("%f, %f\n", x, y);
-	// }
-
-	// const bool hovered = ImGui::IsHovered(box, id);
-	// if (hovered) {
-	// 	ImGui::SetHoveredID(id);
-	// 	ImGui::SetActiveID(id, window);
-	// }
-
-	bool edited = editorBehavior(id, box, inner, points, pointsLen, 0.0, pointsLen - 1, 1.0, -1.0, tool);
-
-	ImGui::PushClipRect(box.Min, box.Max, true);
-	ImVec2 lastPos;
-	// Draw lines
-	if (lines) {
-		for (int i = 0; i < linesLen; i++) {
-			ImVec2 pos = ImVec2(rescalef(i, 0, linesLen - 1, inner.Min.x, inner.Max.x), rescalef(lines[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
-			if (i > 0)
-				window->DrawList->AddLine(lastPos, pos, ImGui::GetColorU32(ImGuiCol_PlotLines));
-			lastPos = pos;
-		}
-	}
-	// Draw points
-	if (points) {
-		for (int i = 0; i < pointsLen; i++) {
-			ImVec2 pos = ImVec2(rescalef(i, 0, pointsLen - 1, inner.Min.x, inner.Max.x), rescalef(points[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
-			window->DrawList->AddCircleFilled(pos + ImVec2(0.5, 0.5), 2.0, ImGui::GetColorU32(ImGuiCol_PlotLines), 12);
-		}
-	}
-	ImGui::PopClipRect();
-
-	return edited;
-}
-
-
-bool renderHistogram(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool) {
-	ImGuiContext &g = *GImGui;
-	ImGuiWindow *window = ImGui::GetCurrentWindow();
-	const ImGuiStyle &style = g.Style;
-	const ImGuiID id = window->GetID(name);
-
-	// Compute positions
-	ImVec2 pos = window->DC.CursorPos;
-	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
-	ImRect box = ImRect(pos, pos + size);
-	ImRect inner = ImRect(box.Min + style.FramePadding, box.Max - style.FramePadding);
-	ImGui::ItemSize(box, style.FramePadding.y);
-	if (!ImGui::ItemAdd(box, NULL))
-		return false;
-
-	bool edited = editorBehavior(id, box, inner, points, pointsLen, -0.5, pointsLen - 0.5, 1.0, 0.0, tool);
-
-	// Draw frame
-	ImGui::RenderFrame(box.Min, box.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
-
-	// Draw bars
-	ImGui::PushClipRect(box.Min, box.Max, true);
-	const float rounding = 0.0;
-	for (int i = 0; i < pointsLen; i++) {
-		float value = points[i];
-		ImVec2 pos0 = ImVec2(rescalef(i, 0, pointsLen, inner.Min.x, inner.Max.x), rescalef(value, 0.0, 1.0, inner.Max.y, inner.Min.y));
-		ImVec2 pos1 = ImVec2(rescalef(i + 1, 0, pointsLen, inner.Min.x, inner.Max.x) - 1, inner.Max.y);
-		window->DrawList->AddRectFilled(pos0, pos1, ImGui::GetColorU32(ImVec4(1.0, 0.8, 0.2, 1.0)), rounding);
-	}
-	for (int i = 0; i < linesLen; i++) {
-		float value = lines[i];
-		ImVec2 pos0 = ImVec2(rescalef(i, 0, linesLen, inner.Min.x, inner.Max.x), rescalef(value, 0.0, 1.0, inner.Max.y, inner.Min.y));
-		ImVec2 pos1 = ImVec2(rescalef(i + 1, 0, linesLen, inner.Min.x, inner.Max.x) - 1, inner.Max.y);
-		window->DrawList->AddRectFilled(pos0, pos1, ImGui::GetColorU32(ImVec4(0.9, 0.7, 0.1, 0.75)), rounding);
-	}
-	ImGui::PopClipRect();
-
-	return edited;
-}
-
-
-void renderWave3D(float height, const float *const *waves, int bankLen, int waveLen) {
-	ImGuiContext &g = *GImGui;
-	ImGuiWindow *window = ImGui::GetCurrentWindow();
-	const ImGuiStyle &style = g.Style;
-
-	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
-	ImRect box = ImRect(window->DC.CursorPos, window->DC.CursorPos + size);
-	ImRect inner = ImRect(box.Min + style.FramePadding, box.Max - style.FramePadding);
-
-	ImGui::PushClipRect(box.Min, box.Max, true);
-
-	const float waveHeight = 10.0;
-	ImVec2 waveOffset = ImVec2(5, -5);
-
-	for (int b = 0; b < bankLen; b++) {
-		ImVec2 *points = new ImVec2[waveLen];
-		for (int i = 0; i < waveLen; i++) {
-			float value = waves[b][i];
-			points[i] = ImVec2(rescalef(i, 0, waveLen - 1, inner.Min.x, inner.Max.x), rescalef(value, -1.0, 1.0, inner.Max.y - 200 + waveHeight, inner.Max.y - 200 - waveHeight) + 0.5 * i) + waveOffset * b;
-		}
-		window->DrawList->AddPolyline(points, waveLen, ImGui::GetColorU32(ImVec4(1.0, 0.8, 0.2, 1.0)), false, 0.1, true);
-		delete[] points;
-	}
-
-	ImGui::PopClipRect();
-}
 
 
 void renderMenuBar() {
@@ -388,7 +138,7 @@ void renderMenuBar() {
 		if (ImGui::BeginMenu("Help")) {
 			if (ImGui::MenuItem("Online Manual", NULL, false))
 				openBrowser("http://example.com");
-			// if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
+			if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();
@@ -451,31 +201,17 @@ void effectSlider(EffectID effect) {
 void editorPage() {
 	ImGui::BeginChild("Sidebar", ImVec2(200, 0), true);
 	{
-		// Render + dragging
-		ImGui::PushItemWidth(-1);
-		for (int n = 0; n < BANK_LEN; n++) {
-			char text[10];
-			snprintf(text, sizeof(text), "%d", n);
-			if (renderWave(text, 30, NULL, 0, currentBank.waves[n].postSamples, WAVE_LEN))
-				selectWave(n);
-
-			// if (ImGui::IsItemActive() && !ImGui::IsItemHovered()) {
-			// 	float drag_dy = ImGui::GetMouseDragDelta(0).y;
-			// 	if (drag_dy < 0.0f && n > 0) {
-			// 		// Swap
-			// 		const char *tmp = items[n];
-			// 		items[n] = items[n - 1];
-			// 		items[n - 1] = tmp;
-			// 		ImGui::ResetMouseDragDelta();
-			// 	} else if (drag_dy > 0.0f && n < BANK_LEN - 1) {
-			// 		const char *tmp = items[n];
-			// 		items[n] = items[n + 1];
-			// 		items[n + 1] = tmp;
-			// 		ImGui::ResetMouseDragDelta();
-			// 	}
-			// }
+		float *samples[BANK_LEN];
+		for (int j = 0; j < BANK_LEN; j++) {
+			samples[j] = currentBank.waves[j].samples;
 		}
-		ImGui::PopItemWidth();
+		ImVec2 gridPos = ImVec2(0, morphZ);
+		float dummyZ = 0.0;
+		if (renderWaveGrid("", 1, BANK_LEN, samples, WAVE_LEN, &dummyZ, &morphZ)) {
+			for (int j = 0; j < BANK_LEN; j++) {
+				currentBank.waves[j].commitSamples();
+			}
+		}
 	}
 	ImGui::EndChild();
 
@@ -494,11 +230,11 @@ void editorPage() {
 		if (ImGui::Button("Clear"))
 			currentBank.waves[selectedWave].clear();
 
-		for (CatalogDirectory &catalogDirectory : catalogDirectories) {
+		for (const CatalogCategory &catalogCategory : catalogCategories) {
 			ImGui::SameLine();
-			if (ImGui::Button(catalogDirectory.name.c_str())) ImGui::OpenPopup(catalogDirectory.name.c_str());
-			if (ImGui::BeginPopup(catalogDirectory.name.c_str())) {
-				for (CatalogFile &catalogFile : catalogDirectory.catalogFiles) {
+			if (ImGui::Button(catalogCategory.name.c_str())) ImGui::OpenPopup(catalogCategory.name.c_str());
+			if (ImGui::BeginPopup(catalogCategory.name.c_str())) {
+				for (const CatalogFile &catalogFile : catalogCategory.files) {
 					if (ImGui::Selectable(catalogFile.name.c_str())) {
 						memcpy(currentBank.waves[selectedWave].samples, catalogFile.samples, sizeof(float) * WAVE_LEN);
 						currentBank.waves[selectedWave].commitSamples();
@@ -656,40 +392,15 @@ void gridPage() {
 	ImGui::BeginChild("Grid Page", ImVec2(0, 0), true);
 	{
 		ImGui::PushItemWidth(-1.0);
-		float waveWidth = ImGui::CalcItemWidth() / BANK_GRID_WIDTH - ImGui::GetStyle().FramePadding.x;
-		float waveHeight = 80.0;
-		ImVec2 waveSize = ImVec2(waveWidth, waveHeight + ImGui::GetStyle().FramePadding.y);
-		ImGui::PushItemWidth(waveWidth);
-		ImRect circleBound;
-		circleBound.Min = ImGui::GetCursorScreenPos() + waveSize / 2.0;
-
-		for (int y = 0; y < BANK_GRID_HEIGHT; y++) {
-			for (int x = 0; x < BANK_GRID_WIDTH; x++) {
-				int index = y * BANK_GRID_WIDTH + x;
-				Wave *wave = &currentBank.waves[index];
-				if (x > 0)
-					ImGui::SameLine();
-				renderWave("##gridwave", waveHeight, NULL, 0, wave->samples, WAVE_LEN, NO_TOOL);
+		float *samples[BANK_LEN];
+		for (int j = 0; j < BANK_LEN; j++) {
+			samples[j] = currentBank.waves[j].samples;
+		}
+		if (renderWaveGrid("", BANK_GRID_WIDTH, BANK_GRID_HEIGHT, samples, WAVE_LEN, &morphX, &morphY)) {
+			for (int j = 0; j < BANK_LEN; j++) {
+				currentBank.waves[j].commitSamples();
 			}
 		}
-		// Crazy hacks because I don't know how to properly deal with grid padding
-		ImGui::SameLine();
-		circleBound.Max.x = ImGui::GetCursorScreenPos().x + waveSize.x / 2.0;
-		ImGui::NewLine();
-		circleBound.Max.y = ImGui::GetCursorScreenPos().y + waveSize.y / 2.0;
-
-		// printf("%f %f %f %f\n", circleBound.Min.x, circleBound.Min.y, circleBound.Max.x, circleBound.Max.y);
-
-		// Get mouse input
-		if (ImGui::IsMouseHoveringWindow() && ImGui::GetIO().MouseDown[0]) {
-			ImVec2 pos = ImGui::GetIO().MousePos;
-			morphX = clampf(rescalef(pos.x, circleBound.Min.x, circleBound.Max.x, 0.0, BANK_GRID_WIDTH), 0.0, BANK_GRID_WIDTH - 1);
-			morphY = clampf(rescalef(pos.y, circleBound.Min.y, circleBound.Max.y, 0.0, BANK_GRID_HEIGHT), 0.0, BANK_GRID_HEIGHT - 1);
-		}
-
-		// Draw circle
-		ImVec2 circlePos = ImVec2(rescalef(morphX, 0.0, BANK_GRID_WIDTH, circleBound.Min.x, circleBound.Max.x), rescalef(morphY, 0.0, BANK_GRID_HEIGHT, circleBound.Min.y, circleBound.Max.y));
-		ImGui::GetWindowDrawList()->AddCircleFilled(circlePos, 8.0, ImGui::GetColorU32(ImGuiCol_SliderGrab), 24);
 	}
 	ImGui::EndChild();
 }
@@ -774,13 +485,13 @@ void importPopup() {
 		// Buttons
 		bool cleanup = false;
 
-		if (ImGui::Button("Cancel")) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
 		if (ImGui::Button("Import")) {
 			historyPush();
 			currentBank = newBank;
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel")) {
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::EndPopup();
@@ -814,21 +525,24 @@ void renderMain() {
 		renderPreview();
 		// Tab bar
 		{
-			static const char *tabLabels[4] = {
+			static const char *tabLabels[NUM_PAGES] = {
 				"Waveform Editor",
 				"Effect Editor",
 				"Grid XY View",
-				"3D Z View"
+				"3D Z View",
+				"WaveEdit DB"
 			};
 			static int hoveredTab = 0;
-			ImGui::TabLabels(4, tabLabels, (int*)&currentPage, NULL, false, &hoveredTab);
+			ImGui::TabLabels(NUM_PAGES, tabLabels, (int*)&currentPage, NULL, false, &hoveredTab);
 		}
 		// Page
 		switch (currentPage) {
-		case WAVEFORM_EDITOR: editorPage(); break;
-		case EFFECT_EDITOR: effectPage(); break;
-		case GRID_VIEW: gridPage(); break;
-		case _3D_VIEW: _3DViewPage(); break;
+		case EDITOR_PAGE: editorPage(); break;
+		case EFFECT_PAGE: effectPage(); break;
+		case GRID_PAGE: gridPage(); break;
+		case WATERFALL_PAGE: _3DViewPage(); break;
+		case DB_PAGE: dbPage(); break;
+		default: break;
 		}
 
 		// Modals

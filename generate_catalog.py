@@ -4,14 +4,14 @@ import scipy.signal
 #import matplotlib.pyplot as plt
 import scipy.io.wavfile
 
-WAVE_DIR = "waves"
+CATALOG_DIR = "catalog"
 SAMPLE_RATE = 44100
 NUM_SAMPLES = 256
 t = np.linspace(0, 1, NUM_SAMPLES, False)
 
 def saveWAV16(filename, x):
 	xi16 = np.int16(np.clip(x, -1, 1) * 32767)
-	path = "%s/%s" % (WAVE_DIR, filename)
+	path = "%s/%s" % (CATALOG_DIR, filename)
 	os.makedirs(os.path.dirname(path), exist_ok=True)
 	print("Saving", path)
 	scipy.io.wavfile.write(path, SAMPLE_RATE, xi16)

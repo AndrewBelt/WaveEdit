@@ -5,7 +5,9 @@ FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O2 -msse -mfpmath=ss
 	-I. -Iimgui -Inoc \
 	$(shell pkg-config --cflags sdl2) \
 	$(shell pkg-config --cflags samplerate) \
-	$(shell pkg-config --cflags sndfile)
+	$(shell pkg-config --cflags sndfile) \
+	$(shell pkg-config --cflags libcurl) \
+	$(shell pkg-config --cflags jansson)
 CFLAGS =
 CXXFLAGS = -std=c++11
 LDFLAGS =
@@ -31,6 +33,8 @@ ifneq (,$(findstring linux,$(MACHINE)))
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
 		$(shell pkg-config --libs sndfile) \
+		$(shell pkg-config --libs libcurl) \
+		$(shell pkg-config --libs jansson) \
 		-lgtk-x11-2.0 -lgobject-2.0
 	SOURCES += src/noc_file_dialog_gtk.c
 else ifneq (,$(findstring apple,$(MACHINE)))
@@ -41,7 +45,9 @@ else ifneq (,$(findstring apple,$(MACHINE)))
 	LDFLAGS += -stdlib=libc++ -lpthread -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
-		$(shell pkg-config --libs sndfile)
+		$(shell pkg-config --libs sndfile) \
+		$(shell pkg-config --libs libcurl) \
+		$(shell pkg-config --libs jansson)
 	SOURCES += src/noc_file_dialog_osx.m
 else ifneq (,$(findstring mingw,$(MACHINE)))
 	# Windows
@@ -51,6 +57,8 @@ else ifneq (,$(findstring mingw,$(MACHINE)))
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
 		$(shell pkg-config --libs sndfile) \
+		$(shell pkg-config --libs libcurl) \
+		$(shell pkg-config --libs jansson) \
 		-lopengl32 -mwindows
 	SOURCES += src/noc_file_dialog_win.c
 else
