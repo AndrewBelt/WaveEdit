@@ -95,16 +95,16 @@ void renderMenuBar() {
 		}
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("New Bank")) {
-				historyPush();
 				currentBank.clear();
 				lastFilename[0] = '\0';
+				historyClear();
 			}
 			if (ImGui::MenuItem("Open Bank...")) {
 				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV Bank\0*.wav\0", NULL, NULL);
 				if (filename) {
-					historyPush();
 					currentBank.loadWAV(filename);
 					snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
+					historyClear();
 				}
 			}
 			if (ImGui::MenuItem("Save Bank", NULL, false, lastFilename[0] != '\0')) {
@@ -193,8 +193,10 @@ void effectSlider(EffectID effect) {
 	snprintf(id, sizeof(id), "##%s", effectNames[effect]);
 	char text[64];
 	snprintf(text, sizeof(text), "%s: %%.3f", effectNames[effect]);
-	if (ImGui::SliderFloat(id, &currentBank.waves[selectedWave].effects[effect], 0.0f, 1.0f, text))
+	if (ImGui::SliderFloat(id, &currentBank.waves[selectedWave].effects[effect], 0.0f, 1.0f, text)) {
 		currentBank.waves[selectedWave].updatePost();
+		historyPush();
+	}
 }
 
 
@@ -210,6 +212,7 @@ void editorPage() {
 		if (renderWaveGrid("", 1, BANK_LEN, samples, WAVE_LEN, &dummyZ, &morphZ)) {
 			for (int j = 0; j < BANK_LEN; j++) {
 				currentBank.waves[j].commitSamples();
+				historyPush();
 			}
 		}
 	}
@@ -227,8 +230,11 @@ void editorPage() {
 		renderToolSelector(&tool);
 
 		ImGui::SameLine();
-		if (ImGui::Button("Clear"))
+		if (ImGui::Button("Clear")) {
 			currentBank.waves[selectedWave].clear();
+			historyPush();
+		}
+
 
 		for (const CatalogCategory &catalogCategory : catalogCategories) {
 			ImGui::SameLine();
@@ -238,6 +244,7 @@ void editorPage() {
 					if (ImGui::Selectable(catalogFile.name.c_str())) {
 						memcpy(currentBank.waves[selectedWave].samples, catalogFile.samples, sizeof(float) * WAVE_LEN);
 						currentBank.waves[selectedWave].commitSamples();
+						historyPush();
 					}
 				}
 				ImGui::EndPopup();
@@ -252,31 +259,42 @@ void editorPage() {
 		cyclicOversample(wave->postSamples, waveOversample, WAVE_LEN, oversample);
 		if (renderWave("we1", 200.0, wave->samples, WAVE_LEN, waveOversample, WAVE_LEN * oversample, tool)) {
 			currentBank.waves[selectedWave].commitSamples();
+			historyPush();
 		}
 
 		if (renderHistogram("he1", 200.0, wave->harmonics, WAVE_LEN / 2, wave->postHarmonics, WAVE_LEN / 2, tool)) {
 			currentBank.waves[selectedWave].commitHarmonics();
+			historyPush();
 		}
 
 		for (int i = 0; i < EFFECTS_LEN; i++) {
 			effectSlider((EffectID) i);
 		}
 
-		if (ImGui::Checkbox("Cycle", &currentBank.waves[selectedWave].cycle))
+		if (ImGui::Checkbox("Cycle", &currentBank.waves[selectedWave].cycle)) {
 			currentBank.waves[selectedWave].updatePost();
+			historyPush();
+		}
 		ImGui::SameLine();
-		if (ImGui::Checkbox("Normalize", &currentBank.waves[selectedWave].normalize))
+		if (ImGui::Checkbox("Normalize", &currentBank.waves[selectedWave].normalize)) {
 			currentBank.waves[selectedWave].updatePost();
-
+			historyPush();
+		}
 		ImGui::SameLine();
-		if (ImGui::Button("Apply"))
+		if (ImGui::Button("Apply")) {
 			currentBank.waves[selectedWave].bakeEffects();
+			historyPush();
+		}
 		ImGui::SameLine();
-		if (ImGui::Button("Randomize"))
+		if (ImGui::Button("Randomize")) {
 			currentBank.waves[selectedWave].randomizeEffects();
+			historyPush();
+		}
 		ImGui::SameLine();
-		if (ImGui::Button("Cancel"))
+		if (ImGui::Button("Cancel")) {
 			currentBank.waves[selectedWave].clearEffects();
+			historyPush();
+		}
 		// if (ImGui::Button("Dump to WAV")) saveBank("out.wav");
 
 		ImGui::PopItemWidth();
@@ -312,15 +330,18 @@ void effectHistogram(EffectID effect, Tool tool) {
 				currentBank.waves[i].effects[effect] = average;
 			}
 			currentBank.waves[i].updatePost();
+			historyPush();
 		}
 	}
 
 	if (renderHistogram(effectNames[effect], 120, value, BANK_LEN, NULL, 0, tool)) {
 		for (int i = 0; i < BANK_LEN; i++) {
 			if (currentBank.waves[i].effects[effect] != value[i]) {
+				// TODO This always selects the highest index. Select the index the mouse is hovering (requires renderHistogram() to return an int)
 				selectWave(i);
 				currentBank.waves[i].effects[effect] = value[i];
 				currentBank.waves[i].updatePost();
+				historyPush();
 			}
 		}
 	}
@@ -342,6 +363,7 @@ void effectPage() {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].normalize = true;
 				currentBank.waves[i].updatePost();
+				historyPush();
 			}
 		}
 		ImGui::SameLine();
@@ -349,6 +371,7 @@ void effectPage() {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].normalize = false;
 				currentBank.waves[i].updatePost();
+				historyPush();
 			}
 		}
 		ImGui::SameLine();
@@ -356,6 +379,7 @@ void effectPage() {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].cycle = true;
 				currentBank.waves[i].updatePost();
+				historyPush();
 			}
 		}
 		ImGui::SameLine();
@@ -363,24 +387,28 @@ void effectPage() {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].cycle = false;
 				currentBank.waves[i].updatePost();
+				historyPush();
 			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Randomize")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].randomizeEffects();
+				historyPush();
 			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Clear")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].clearEffects();
+				historyPush();
 			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Apply")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].bakeEffects();
+				historyPush();
 			}
 		}
 	}
@@ -399,6 +427,7 @@ void gridPage() {
 		if (renderWaveGrid("", BANK_GRID_WIDTH, BANK_GRID_HEIGHT, samples, WAVE_LEN, &morphX, &morphY)) {
 			for (int j = 0; j < BANK_LEN; j++) {
 				currentBank.waves[j].commitSamples();
+				historyPush();
 			}
 		}
 	}
@@ -486,8 +515,8 @@ void importPopup() {
 		bool cleanup = false;
 
 		if (ImGui::Button("Import")) {
-			historyPush();
 			currentBank = newBank;
+			historyPush();
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -690,5 +719,14 @@ void uiInit() {
 
 
 void uiRender() {
+	// Key commands
+	if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(SDLK_z)) {
+		// History
+		if (ImGui::GetIO().KeyShift)
+			historyRedo();
+		else
+			historyUndo();
+	}
+
 	renderMain();
 }

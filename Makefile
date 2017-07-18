@@ -1,6 +1,6 @@
 VERSION = v0.4
 
-FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O2 -msse -mfpmath=sse -ffast-math \
+FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O2 -march=core2 -msse -mfpmath=sse -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
 	-I. -Iimgui -Inoc \
 	$(shell pkg-config --cflags sdl2) \

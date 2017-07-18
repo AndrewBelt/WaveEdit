@@ -195,9 +195,11 @@ struct Bank {
 // history.cpp
 ////////////////////
 
+/** Call as much as you like. History will only be pushed if a time delay between the last call has occurred. */
 void historyPush();
-void historyPop();
+void historyUndo();
 void historyRedo();
+void historyClear();
 
 extern Bank currentBank;
 

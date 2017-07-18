@@ -1,27 +1,46 @@
 #include "WaveEdit.hpp"
+#include <SDL.h>
 
 
 Bank currentBank;
 
-static int currentBankIndex = 0;
 static std::vector<Bank> history;
+static int currentIndex = 0;
+static double previousTime = -INFINITY;
+static const double delayTime = 0.5;
 
 
 void historyPush() {
-	// TODO
-	// Remove redo "history"
+	double time = SDL_GetTicks() / 1000.0;
+	if (time - previousTime >= delayTime) {
+		currentIndex++;
+	}
 
-	history.push_back(currentBank);
+	// Delete redo history
+	history.resize(currentIndex + 1);
+
+	history[currentIndex] = currentBank;
+	previousTime = time;
 }
 
-void historyPop() {
-	if (history.size() > 0) {
-		currentBank = history[history.size() - 1];
-		history.pop_back();
+void historyUndo() {
+	if (currentIndex >= 1) {
+		currentIndex--;
+		currentBank = history[currentIndex];
+		previousTime = -INFINITY;
 	}
 }
 
 void historyRedo() {
-	// TODO
+	if (history.size() > currentIndex + 1) {
+		currentIndex++;
+		currentBank = history[currentIndex];
+		previousTime = -INFINITY;
+	}
 }
 
+void historyClear() {
+	history.clear();
+	currentIndex = 0;
+	previousTime = -INFINITY;
+}

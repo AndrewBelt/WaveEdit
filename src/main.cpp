@@ -55,7 +55,9 @@ int main(int argc, char **argv) {
 	SDL_SetWindowMinimumSize(window, 800, 600);
 	SDL_GLContext glContext = SDL_GL_CreateContext(window);
 	// Disable V-Sync
-	SDL_GL_SetSwapInterval(0);
+	// SDL_GL_SetSwapInterval(0);
+	// Enable V-Sync
+	SDL_GL_SetSwapInterval(1);
 
 	// Set up Imgui binding
 	ImGui_ImplSdl_Init(window);
@@ -63,6 +65,7 @@ int main(int argc, char **argv) {
 	// Initialize modules
 	uiInit();
 	currentBank.load("autosave.dat");
+	historyClear();
 	catalogInit();
 	audioInit();
 
