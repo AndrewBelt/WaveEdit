@@ -223,74 +223,143 @@ bool renderHistogram(const char *name, float height, float *points, int pointsLe
 }
 
 
-bool renderWaveGrid(const char *name, float height, int gridWidth, int gridHeight, float **lines, int linesLen, float *gridX, float *gridY) {
-	ImVec2 padding = ImGui::GetStyle().FramePadding;
-	ImVec2 windowPadding = ImGui::GetStyle().WindowPadding;
-	ImVec2 size = ImGui::GetWindowSize() - windowPadding - padding;
-	ImRect box = ImRect(ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + size);
+bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, float *gridX, float *gridY, int *selectedId) {
+	assert(bank);
+	assert(BANK_LEN % gridWidth == 0);
+	int gridHeight = BANK_LEN / gridWidth;
+
+	ImGuiContext &g = *GImGui;
+	ImGuiWindow *window = ImGui::GetCurrentWindow();
+	const ImGuiStyle &style = g.Style;
+	const ImGuiID id = window->GetID(name);
+	ImVec2 padding = style.FramePadding;
+	ImVec2 windowPadding = style.WindowPadding;
+
+	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
+	if (height < 0.f)
+		size.y = ImGui::GetWindowSize().y - windowPadding.y - padding.y;
+	ImRect box = ImRect(window->DC.CursorPos, window->DC.CursorPos + size);
 	ImVec2 cellSize = ImVec2((size.x + padding.x) / gridWidth, (size.y + padding.y) / gridHeight);
-	ImGui::ItemSize(box, ImGui::GetStyle().FramePadding.y);
+	ImGui::ItemSize(box, style.FramePadding.y);
 	if (!ImGui::ItemAdd(box, NULL))
 		return false;
-	bool edited = false;
 
 	// Wave grid
-	for (int j = 0; j < gridWidth * gridHeight; j++) {
+	for (int j = 0; j < BANK_LEN; j++) {
 		int x = j % gridWidth;
 		int y = j / gridWidth;
 		// Compute cell box
 		ImVec2 cellPos = ImVec2(box.Min.x + cellSize.x * x, box.Min.y + cellSize.y * y);
 		ImRect cellBox = ImRect(cellPos, cellPos + cellSize - padding);
-		ImGui::RenderFrame(cellBox.Min, cellBox.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, ImGui::GetStyle().FrameRounding);
+		ImU32 col = ImGui::GetColorU32(ImGuiCol_FrameBg);
+		if (selectedId && *selectedId == j)
+			col = ImGui::GetColorU32(ImGuiCol_FrameBgActive);
+		ImGui::RenderFrame(cellBox.Min, cellBox.Max, col, true, ImGui::GetStyle().FrameRounding);
 
 		// Draw lines
 		ImGui::PushClipRect(cellBox.Min, cellBox.Max, true);
-		if (lines) {
-			ImVec2 lastPos;
-			for (int i = 0; i < linesLen; i++) {
-				float value = lines[j][i];
-				ImVec2 pos = ImVec2(rescalef(i, 0, linesLen - 1, cellBox.Min.x, cellBox.Max.x), rescalef(value, 1.0, -1.0, cellBox.Min.y, cellBox.Max.y));
-				if (i > 0)
-					ImGui::GetWindowDrawList()->AddLine(lastPos, pos, ImGui::GetColorU32(ImGuiCol_PlotLines));
-				lastPos = pos;
-			}
+		ImVec2 lastPos;
+		for (int i = 0; i < WAVE_LEN; i++) {
+			float value = bank->waves[j].postSamples[i];
+			ImVec2 pos = ImVec2(rescalef(i, 0, WAVE_LEN - 1, cellBox.Min.x, cellBox.Max.x), rescalef(value, 1.0, -1.0, cellBox.Min.y, cellBox.Max.y));
+			if (i > 0)
+				ImGui::GetWindowDrawList()->AddLine(lastPos, pos, ImGui::GetColorU32(ImGuiCol_PlotLines));
+			lastPos = pos;
 		}
 		ImGui::PopClipRect();
 	}
 
-	// Cursor circle
-	if (gridX && gridY) {
-		// Draw circle
-		ImVec2 circlePos = ImVec2(rescalef(*gridX, 0.0, gridWidth, box.Min.x, box.Max.x), rescalef(*gridY, 0.0, gridHeight, box.Min.y, box.Max.y)) + cellSize / 2.0;
-		ImGui::GetWindowDrawList()->AddCircleFilled(circlePos, 8.0, ImGui::GetColorU32(ImGuiCol_SliderGrab), 24);
-
-		// Get mouse input
-		if (ImGui::IsMouseHoveringWindow() && ImGui::IsMouseDown(0)) {
-			ImVec2 pos = ImGui::GetIO().MousePos - cellSize / 2.0;
-			*gridX = clampf(rescalef(pos.x, box.Min.x, box.Max.x, 0.0, gridWidth), 0, gridWidth - 1);
-			*gridY = clampf(rescalef(pos.y, box.Min.y, box.Max.y, 0.0, gridHeight), 0, gridHeight - 1);
-		}
-
-		if (ImGui::IsMouseHoveringWindow() && ImGui::IsMouseClicked(1)) {
-			ImGui::OpenPopup("Grid Context Menu");
+	// Behavior
+	bool hovered = ImGui::IsHovered(box, id);
+	if (hovered) {
+		ImGui::SetHoveredID(id);
+		if (g.IO.MouseClicked[0]) {
+			ImGui::SetActiveID(id, window);
+			ImGui::FocusWindow(window);
+			g.ActiveIdClickOffset = g.IO.MousePos - box.Min;
 		}
 	}
 
+	// Unhover
+	if (g.ActiveId == id) {
+		if (!g.IO.MouseDown[0]) {
+			ImGui::ClearActiveID();
+		}
+	}
+
+	// Select wave if left-dragged or right-clicked
+	ImVec2 gridPos;
+	if (gridX && gridY) {
+		gridPos.x = *gridX;
+		gridPos.y = *gridY;
+	}
+
+	if ((g.ActiveId == id && id && g.IO.MouseDown[0]) || (hovered && g.IO.MouseClicked[1])) {
+		ImVec2 cellPos = g.IO.MousePos - cellSize / 2.0;
+		gridPos.x = clampf(rescalef(cellPos.x, box.Min.x, box.Max.x, 0.0, gridWidth), 0, gridWidth - 1);
+		gridPos.y = clampf(rescalef(cellPos.y, box.Min.y, box.Max.y, 0.0, gridHeight), 0, gridHeight - 1);
+		if (selectedId) {
+			*selectedId = (int)roundf(gridPos.y) * gridWidth + (int)roundf(gridPos.x);
+		}
+
+		if (g.IO.MouseDoubleClicked[0]) {
+			// Round gridPos to integers
+			gridPos.x = roundf(gridPos.x);
+			gridPos.y = roundf(gridPos.y);
+			ImGui::ClearActiveID();
+		}
+
+		if (!g.IO.MouseClicked[1] && (gridX && gridY)) {
+			*gridX = gridPos.x;
+			*gridY = gridPos.y;
+		}
+	}
+
+	// Cursor circle
+	if (gridX && gridY) {
+		ImVec2 circlePos = ImVec2(
+			rescalef(*gridX, 0.0, gridWidth, box.Min.x, box.Max.x),
+			rescalef(*gridY, 0.0, gridHeight, box.Min.y, box.Max.y)) + cellSize / 2.0;
+		ImGui::GetWindowDrawList()->AddCircleFilled(circlePos, 8.0, ImGui::GetColorU32(ImGuiCol_ScrollbarGrab), 24);
+	}
+
+
+	// Right click context menu
+	if (hovered && g.IO.MouseClicked[1]) {
+		ImGui::OpenPopup("Grid Context Menu");
+	}
+
+	bool edited = false;
+
 	// Context menu
+	static bool clipboardActive = false;
+	static Wave clipboardWave;
+
 	if (ImGui::BeginPopup("Grid Context Menu")) {
 		if (ImGui::MenuItem("Copy")) {
-
+			if (selectedId) {
+				clipboardWave = bank->waves[*selectedId];
+				clipboardActive = true;
+			}
 		}
-		if (ImGui::MenuItem("Paste")) {
-
+		if (ImGui::MenuItem("Paste", NULL, false, clipboardActive)) {
+			if (selectedId)
+				bank->waves[*selectedId] = clipboardWave;
+			edited = true;
 		}
 		if (ImGui::MenuItem("Duplicate To All")) {
-
+			if (selectedId)
+				bank->duplicateToAll(*selectedId);
+			edited = true;
 		}
 		if (ImGui::MenuItem("Clear")) {
+			if (selectedId)
+				bank->waves[*selectedId].clear();
 			edited = true;
 		}
 		if (ImGui::MenuItem("Clear All")) {
+			bank->clear();
+			edited = true;
 		}
 		ImGui::EndPopup();
 	}

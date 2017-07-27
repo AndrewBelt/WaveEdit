@@ -28,6 +28,15 @@ void Bank::getSamples(float *out) {
 }
 
 
+void Bank::duplicateToAll(int waveId) {
+	for (int j = 0; j < BANK_LEN; j++) {
+		if (j != waveId)
+			waves[j] = waves[waveId];
+		// No need to commit the wave because we're copying everything
+	}
+}
+
+
 void Bank::importSamples(const float *in, int inLen, float gain, float offset, float zoom, ImportMode mode) {
 	zoom = clampf(zoom, -8.0, 8.0);
 	const int outLen = BANK_LEN * WAVE_LEN;

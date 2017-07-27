@@ -182,6 +182,7 @@ struct Bank {
 	void clear();
 	void setSamples(const float *in);
 	void getSamples(float *out);
+	void duplicateToAll(int waveId);
 	void importSamples(const float *in, int inLen, float gain, float offset, float zoom, ImportMode mode);
 	/** Binary dump of the bank struct */
 	void save(const char *filename);
@@ -236,6 +237,7 @@ extern float playFrequency;
 extern float playFrequencySmooth;
 extern bool playEnabled;
 extern bool playModeXY;
+extern bool morphSnap;
 extern float morphX;
 extern float morphY;
 extern float morphZ;
@@ -268,7 +270,7 @@ enum Tool {
 
 bool renderWave(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool = NO_TOOL);
 bool renderHistogram(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool);
-bool renderWaveGrid(const char *name, float height, int gridWidth, int gridHeight, float **lines, int linesLen, float *gridX, float *gridY);
+bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, float *gridX, float *gridY, int *selectedId);
 void renderWave3D(float height, const float *const *waves, int bankLen, int waveLen);
 
 

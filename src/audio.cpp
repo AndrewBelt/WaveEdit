@@ -8,6 +8,7 @@ float playFrequency = 220.0;
 float playFrequencySmooth = playFrequency;
 bool playModeXY = false;
 bool playEnabled = false;
+bool morphSnap = false;
 float morphX = 0.0;
 float morphY = 0.0;
 float morphZ = 0.0;
@@ -39,10 +40,17 @@ void audioCallback(void *userdata, Uint8 *stream, int len) {
 			int inLen = 64;
 			float in[inLen];
 			for (int i = 0; i < inLen; i++) {
-				const float lambdaMorph = fminf(0.1 / playFrequency, 0.5);
-				morphXSmooth = crossf(morphXSmooth, clampf(morphX, 0.0, BANK_GRID_WIDTH - 1), lambdaMorph);
-				morphYSmooth = crossf(morphYSmooth, clampf(morphY, 0.0, BANK_GRID_HEIGHT - 1), lambdaMorph);
-				morphZSmooth = crossf(morphZSmooth, clampf(morphZ, 0.0, BANK_LEN - 1), lambdaMorph);
+				if (morphSnap) {
+					morphXSmooth = morphX = roundf(morphX);
+					morphYSmooth = morphY = roundf(morphY);
+					morphZSmooth = morphZ = roundf(morphZ);
+				}
+				else {
+					const float lambdaMorph = fminf(0.1 / playFrequency, 0.5);
+					morphXSmooth = crossf(morphXSmooth, clampf(morphX, 0.0, BANK_GRID_WIDTH - 1), lambdaMorph);
+					morphYSmooth = crossf(morphYSmooth, clampf(morphY, 0.0, BANK_GRID_HEIGHT - 1), lambdaMorph);
+					morphZSmooth = crossf(morphZSmooth, clampf(morphZ, 0.0, BANK_LEN - 1), lambdaMorph);
+				}
 
 				int index = (playIndex + i) % WAVE_LEN;
 				if (playModeXY) {

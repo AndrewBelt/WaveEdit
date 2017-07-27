@@ -95,7 +95,13 @@ void selectWave(int waveId) {
 
 
 
-
+void refreshMorphSnap() {
+	if (morphSnap) {
+		morphX = roundf(morphX);
+		morphY = roundf(morphY);
+		morphZ = roundf(morphZ);
+	}
+}
 
 void renderMenuBar() {
 	// HACK
@@ -197,7 +203,7 @@ void renderMenuBar() {
 		// Help
 		if (ImGui::BeginMenu("Help")) {
 			if (ImGui::MenuItem("Online Manual", NULL, false))
-				openBrowser("http://example.com");
+				openBrowser("http://synthtech.com/WaveEdit");
 			// if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
 			ImGui::EndMenu();
 		}
@@ -215,6 +221,8 @@ void renderPreview() {
 	ImGui::SameLine();
 	ImGui::SliderFloat("##playFrequency", &playFrequency, 1.0f, 10000.0f, "Frequency: %.2f Hz", 3.0f);
 
+	ImGui::Checkbox("Morph Snap", &morphSnap);
+	ImGui::SameLine();
 	if (ImGui::RadioButton("Morph XY", playModeXY)) playModeXY = true;
 	ImGui::SameLine();
 	if (ImGui::RadioButton("Morph Z", !playModeXY)) playModeXY = false;
@@ -232,6 +240,8 @@ void renderPreview() {
 		ImGui::PushItemWidth(-1.0);
 		ImGui::SliderFloat("##Morph Z", &morphZ, 0.0, BANK_LEN - 1, "Morph Z: %.3f");
 	}
+
+	refreshMorphSnap();
 }
 
 
@@ -263,18 +273,12 @@ void effectSlider(EffectID effect) {
 void editorPage() {
 	ImGui::BeginChild("Sidebar", ImVec2(200, 0), true);
 	{
-		float *samples[BANK_LEN];
-		for (int j = 0; j < BANK_LEN; j++) {
-			samples[j] = currentBank.waves[j].samples;
-		}
-		ImVec2 gridPos = ImVec2(0, morphZ);
 		float dummyZ = 0.0;
-		if (renderWaveGrid("SidebarGrid", BANK_LEN * 40.0, 1, BANK_LEN, samples, WAVE_LEN, &dummyZ, &morphZ)) {
-			for (int j = 0; j < BANK_LEN; j++) {
-				currentBank.waves[j].commitSamples();
-				historyPush();
-			}
+		ImGui::PushItemWidth(-1);
+		if (renderBankGrid("SidebarGrid", BANK_LEN * 35.0, 1, &currentBank, &dummyZ, &morphZ, &selectedWave)) {
+			historyPush();
 		}
+		refreshMorphSnap();
 	}
 	ImGui::EndChild();
 
@@ -480,16 +484,10 @@ void gridPage() {
 	ImGui::BeginChild("Grid Page", ImVec2(0, 0), true);
 	{
 		ImGui::PushItemWidth(-1.0);
-		float *samples[BANK_LEN];
-		for (int j = 0; j < BANK_LEN; j++) {
-			samples[j] = currentBank.waves[j].samples;
+		if (renderBankGrid("WaveGrid", -1.f, BANK_GRID_WIDTH, &currentBank, &morphX, &morphY, &selectedWave)) {
+			historyPush();
 		}
-		if (renderWaveGrid("WaveGrid", 100.0, BANK_GRID_WIDTH, BANK_GRID_HEIGHT, samples, WAVE_LEN, &morphX, &morphY)) {
-			for (int j = 0; j < BANK_LEN; j++) {
-				currentBank.waves[j].commitSamples();
-				historyPush();
-			}
-		}
+		refreshMorphSnap();
 	}
 	ImGui::EndChild();
 }
@@ -668,7 +666,7 @@ static void refreshStyle() {
 		style.Colors[ImGuiCol_BorderShadow]          = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
 		style.Colors[ImGuiCol_FrameBg]               = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
 		style.Colors[ImGuiCol_FrameBgHovered]        = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
-		style.Colors[ImGuiCol_FrameBgActive]         = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
+		style.Colors[ImGuiCol_FrameBgActive]         = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
 		style.Colors[ImGuiCol_TitleBg]               = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
 		style.Colors[ImGuiCol_TitleBgCollapsed]      = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
 		style.Colors[ImGuiCol_TitleBgActive]         = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
@@ -734,7 +732,7 @@ static void refreshStyle() {
 		style.Colors[ImGuiCol_BorderShadow]         = transparent;
 		style.Colors[ImGuiCol_FrameBg]              = base[0x1];
 		style.Colors[ImGuiCol_FrameBgHovered]       = base[0x1];
-		style.Colors[ImGuiCol_FrameBgActive]        = base[0x1];
+		style.Colors[ImGuiCol_FrameBgActive]        = base[0x2];
 		style.Colors[ImGuiCol_TitleBg]              = base[0x3];
 		style.Colors[ImGuiCol_TitleBgCollapsed]     = base[0x3];
 		style.Colors[ImGuiCol_TitleBgActive]        = base[0x3];
@@ -800,7 +798,7 @@ static void refreshStyle() {
 		style.Colors[ImGuiCol_BorderShadow]         = transparent;
 		style.Colors[ImGuiCol_FrameBg]              = base[0x6];
 		style.Colors[ImGuiCol_FrameBgHovered]       = base[0x6];
-		style.Colors[ImGuiCol_FrameBgActive]        = base[0x6];
+		style.Colors[ImGuiCol_FrameBgActive]        = base[0x7];
 		style.Colors[ImGuiCol_TitleBg]              = base[0x4];
 		style.Colors[ImGuiCol_TitleBgCollapsed]     = base[0x4];
 		style.Colors[ImGuiCol_TitleBgActive]        = base[0x4];
@@ -866,7 +864,7 @@ static void refreshStyle() {
 		style.Colors[ImGuiCol_BorderShadow]         = transparent;
 		style.Colors[ImGuiCol_FrameBg]              = base[0x6];
 		style.Colors[ImGuiCol_FrameBgHovered]       = base[0x6];
-		style.Colors[ImGuiCol_FrameBgActive]        = base[0x6];
+		style.Colors[ImGuiCol_FrameBgActive]        = base[0x7];
 		style.Colors[ImGuiCol_TitleBg]              = base[0x4];
 		style.Colors[ImGuiCol_TitleBgCollapsed]     = base[0x4];
 		style.Colors[ImGuiCol_TitleBgActive]        = base[0x4];
