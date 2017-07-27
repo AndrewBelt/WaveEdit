@@ -97,6 +97,7 @@ int main(int argc, char **argv) {
 	currentBank.save("autosave.dat");
 
 	// Cleanup
+	uiDestroy();
 	ImGui_ImplSdl_Shutdown();
 	SDL_GL_DeleteContext(glContext);
 	SDL_DestroyWindow(window);

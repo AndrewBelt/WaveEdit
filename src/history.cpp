@@ -32,7 +32,7 @@ void historyUndo() {
 }
 
 void historyRedo() {
-	if (history.size() > currentIndex + 1) {
+	if ((int) history.size() > currentIndex + 1) {
 		currentIndex++;
 		currentBank = history[currentIndex];
 		previousTime = -INFINITY;

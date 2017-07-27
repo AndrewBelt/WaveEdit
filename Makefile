@@ -1,12 +1,13 @@
 VERSION = v0.4
 
-FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O2 -march=core2 -msse -mfpmath=sse -ffast-math \
+FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=core2 -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
 	-I. -Iimgui -Inoc \
 	$(shell pkg-config --cflags sdl2) \
 	$(shell pkg-config --cflags samplerate) \
 	$(shell pkg-config --cflags sndfile) \
 	$(shell pkg-config --cflags libcurl) \
+	$(shell pkg-config --cflags openssl) \
 	$(shell pkg-config --cflags jansson)
 CFLAGS =
 CXXFLAGS = -std=c++11
@@ -34,6 +35,7 @@ ifneq (,$(findstring linux,$(MACHINE)))
 		$(shell pkg-config --libs samplerate) \
 		$(shell pkg-config --libs sndfile) \
 		$(shell pkg-config --libs libcurl) \
+		$(shell pkg-config --libs openssl) \
 		$(shell pkg-config --libs jansson) \
 		-lgtk-x11-2.0 -lgobject-2.0
 	SOURCES += src/noc_file_dialog_gtk.c
@@ -87,6 +89,9 @@ WaveEdit: $(OBJECTS)
 clean:
 	rm -frv $(OBJECTS) WaveEdit dist
 
+
+DIST_ZIP = WaveEdit_$(VERSION)_$(ARCH).zip
+
 .PHONY: dist
 dist: WaveEdit
 	mkdir -p dist/WaveEdit
@@ -130,7 +135,7 @@ else ifeq ($(ARCH),mac)
 	install_name_tool -change /usr/local/opt/libsamplerate/lib/libsamplerate.0.dylib @executable_path/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 endif
-	cd dist && zip -9 -r WaveEdit_$(VERSION)_$(ARCH).zip WaveEdit
+	cd dist && zip -9 -r $(DIST_ZIP) WaveEdit
 
 
 # SUFFIXES:

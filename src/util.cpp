@@ -1,6 +1,7 @@
 #include "WaveEdit.hpp"
 #include <string.h>
 #include <sndfile.h>
+#include <stdarg.h>
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -57,4 +58,20 @@ float *loadAudio(const char *filename, int *length) {
 	if (length)
 		*length = len;
 	return samples;
+}
+
+
+std::string stringf(const char *format, ...) {
+	va_list args;
+	va_start(args, format);
+	int size = vsnprintf(NULL, 0, format, args);
+	va_end(args);
+	if (size < 0)
+		return "";
+	std::string s;
+	s.resize(size);
+	va_start(args, format);
+	vsnprintf(&s[0], size+1, format, args);
+	va_end(args);
+	return s;
 }

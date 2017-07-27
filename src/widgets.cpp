@@ -209,13 +209,13 @@ bool renderHistogram(const char *name, float height, float *points, int pointsLe
 		float value = points[i];
 		ImVec2 pos0 = ImVec2(rescalef(i, 0, pointsLen, inner.Min.x, inner.Max.x), rescalef(value, 0.0, 1.0, inner.Max.y, inner.Min.y));
 		ImVec2 pos1 = ImVec2(rescalef(i + 1, 0, pointsLen, inner.Min.x, inner.Max.x) - 1, inner.Max.y);
-		window->DrawList->AddRectFilled(pos0, pos1, ImGui::GetColorU32(ImVec4(1.0, 0.8, 0.2, 1.0)), rounding);
+		window->DrawList->AddRectFilled(pos0, pos1, ImGui::GetColorU32(ImGuiCol_PlotHistogram), rounding);
 	}
 	for (int i = 0; i < linesLen; i++) {
 		float value = lines[i];
 		ImVec2 pos0 = ImVec2(rescalef(i, 0, linesLen, inner.Min.x, inner.Max.x), rescalef(value, 0.0, 1.0, inner.Max.y, inner.Min.y));
 		ImVec2 pos1 = ImVec2(rescalef(i + 1, 0, linesLen, inner.Min.x, inner.Max.x) - 1, inner.Max.y);
-		window->DrawList->AddRectFilled(pos0, pos1, ImGui::GetColorU32(ImVec4(0.9, 0.7, 0.1, 0.75)), rounding);
+		window->DrawList->AddRectFilled(pos0, pos1, ImGui::GetColorU32(ImGuiCol_PlotHistogramHovered), rounding);
 	}
 	ImGui::PopClipRect();
 
@@ -223,7 +223,7 @@ bool renderHistogram(const char *name, float height, float *points, int pointsLe
 }
 
 
-bool renderWaveGrid(const char *name, int gridWidth, int gridHeight, float **lines, int linesLen, float *gridX, float *gridY) {
+bool renderWaveGrid(const char *name, float height, int gridWidth, int gridHeight, float **lines, int linesLen, float *gridX, float *gridY) {
 	ImVec2 padding = ImGui::GetStyle().FramePadding;
 	ImVec2 windowPadding = ImGui::GetStyle().WindowPadding;
 	ImVec2 size = ImGui::GetWindowSize() - windowPadding - padding;
@@ -319,7 +319,7 @@ void renderWave3D(float height, const float *const *waves, int bankLen, int wave
 			float value = waves[b][i];
 			points[i] = ImVec2(rescalef(i, 0, waveLen - 1, inner.Min.x, inner.Max.x), rescalef(value, -1.0, 1.0, inner.Max.y - 200 + waveHeight, inner.Max.y - 200 - waveHeight) + 0.5 * i) + waveOffset * b;
 		}
-		window->DrawList->AddPolyline(points, waveLen, ImGui::GetColorU32(ImVec4(1.0, 0.8, 0.2, 1.0)), false, 0.1, true);
+		window->DrawList->AddPolyline(points, waveLen, ImGui::GetColorU32(ImGuiCol_PlotHistogram), false, 0.1, true);
 		delete[] points;
 	}
 

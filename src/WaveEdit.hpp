@@ -95,6 +95,8 @@ void IRFFT(const float *in, float *out, int len);
 
 int resample(const float *in, int inLen, float *out, int outLen, double ratio);
 void cyclicOversample(const float *in, float *out, int len, int oversample);
+void i16_to_f32(const int16_t *in, float *out, int length);
+void f32_to_i16(const float *in, int16_t *out, int length);
 
 
 ////////////////////
@@ -104,7 +106,8 @@ void cyclicOversample(const float *in, float *out, int len, int oversample);
 void openBrowser(const char *url);
 /** Caller must free(). Returns NULL if unsuccessful */
 float *loadAudio(const char *filename, int *length);
-
+/** Converts a printf format to a std::string */
+std::string stringf(const char *format, ...);
 
 ////////////////////
 // wave.cpp
@@ -265,7 +268,7 @@ enum Tool {
 
 bool renderWave(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool = NO_TOOL);
 bool renderHistogram(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool);
-bool renderWaveGrid(const char *name, int gridWidth, int gridHeight, float **lines, int linesLen, float *gridX, float *gridY);
+bool renderWaveGrid(const char *name, float height, int gridWidth, int gridHeight, float **lines, int linesLen, float *gridX, float *gridY);
 void renderWave3D(float height, const float *const *waves, int bankLen, int waveLen);
 
 
@@ -274,6 +277,7 @@ void renderWave3D(float height, const float *const *waves, int bankLen, int wave
 ////////////////////
 
 void uiInit();
+void uiDestroy();
 void uiRender();
 
 

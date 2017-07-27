@@ -67,3 +67,15 @@ void cyclicOversample(const float *in, float *out, int len, int oversample) {
 	IRFFT(fft, out, len * oversample);
 }
 
+
+void i16_to_f32(const int16_t *in, float *out, int length) {
+	for (int i = 0; i < length; i++) {
+		out[i] = in[i] / 32767.f;
+	}
+}
+void f32_to_i16(const float *in, int16_t *out, int length) {
+	for (int i = 0; i < length; i++) {
+		// The following line has an incredible amount of controversy among DSP enthusiasts.
+		out[i] = roundf(clampf(in[i], -1.0, 1.0) * 32767.f);
+	}
+}
