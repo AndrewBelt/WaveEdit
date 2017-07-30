@@ -108,6 +108,9 @@ void openBrowser(const char *url);
 float *loadAudio(const char *filename, int *length);
 /** Converts a printf format to a std::string */
 std::string stringf(const char *format, ...);
+unsigned char *base64_encode(const unsigned char *src, size_t len, size_t *out_len);
+unsigned char *base64_decode(const unsigned char *src, size_t len, size_t *out_len);
+
 
 ////////////////////
 // wave.cpp
@@ -181,7 +184,7 @@ struct Bank {
 
 	void clear();
 	void setSamples(const float *in);
-	void getSamples(float *out);
+	void getPostSamples(float *out);
 	void duplicateToAll(int waveId);
 	void importSamples(const float *in, int inLen, float gain, float offset, float zoom, ImportMode mode);
 	/** Binary dump of the bank struct */

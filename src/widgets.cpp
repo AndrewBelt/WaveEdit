@@ -261,11 +261,18 @@ bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, f
 		ImVec2 lastPos;
 		for (int i = 0; i < WAVE_LEN; i++) {
 			float value = bank->waves[j].postSamples[i];
-			ImVec2 pos = ImVec2(rescalef(i, 0, WAVE_LEN - 1, cellBox.Min.x, cellBox.Max.x), rescalef(value, 1.0, -1.0, cellBox.Min.y, cellBox.Max.y));
+			float margin = 3.0;
+			ImVec2 pos = ImVec2(rescalef(i, 0, WAVE_LEN - 1, cellBox.Min.x, cellBox.Max.x), rescalef(value, 1.0, -1.0, cellBox.Min.y + margin, cellBox.Max.y - margin));
 			if (i > 0)
-				ImGui::GetWindowDrawList()->AddLine(lastPos, pos, ImGui::GetColorU32(ImGuiCol_PlotLines));
+				window->DrawList->AddLine(lastPos, pos, ImGui::GetColorU32(ImGuiCol_PlotLines));
 			lastPos = pos;
 		}
+
+		// Draw cell label
+		char label[64];
+		snprintf(label, sizeof(label), "%d", j);
+		ImVec2 labelPos = cellPos + ImVec2(2, 2);
+		window->DrawList->AddText(labelPos, ImGui::GetColorU32(ImGuiCol_PlotLines), label);
 		ImGui::PopClipRect();
 	}
 

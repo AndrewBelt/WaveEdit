@@ -1,4 +1,4 @@
-VERSION = v0.4
+VERSION = v0.5
 
 FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=core2 -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
@@ -98,17 +98,11 @@ dist: WaveEdit
 	cp -R banks dist/WaveEdit
 	cp LICENSE* dist/WaveEdit
 ifeq ($(ARCH),lin)
-	cp -R logo* fonts waves dist/WaveEdit
+	cp -R logo* fonts catalog dist/WaveEdit
 	cp WaveEdit WaveEdit.sh dist/WaveEdit
-	cp /usr/lib/libSDL2-2.0.so.0 dist/WaveEdit
-	cp /usr/lib/libsamplerate.so.0 dist/WaveEdit
-	cp /usr/lib/libsndfile.so.1 dist/WaveEdit
-	cp /usr/lib/libFLAC.so.8 dist/WaveEdit
-	cp /usr/lib/libogg.so.0 dist/WaveEdit
-	cp /usr/lib/libvorbis.so.0 dist/WaveEdit
-	cp /usr/lib/libvorbisenc.so.2 dist/WaveEdit
+	cp /usr/lib/libSDL2-2.0.so.0 /usr/lib/libsamplerate.so.0 /usr/lib/libsndfile.so.1 /usr/lib/libjansson.so.4 /usr/lib/libFLAC.so.8 /usr/lib/libogg.so.0 /usr/lib/libvorbis.so.0 /usr/lib/libvorbisenc.so.2 dist/WaveEdit
 else ifeq ($(ARCH),win)
-	cp -R logo* fonts waves dist/WaveEdit
+	cp -R logo* fonts catalog dist/WaveEdit
 	cp WaveEdit.exe dist/WaveEdit
 	cp /mingw64/bin/libgcc_s_seh-1.dll dist/WaveEdit
 	cp /mingw64/bin/libsamplerate-0.dll dist/WaveEdit
@@ -126,7 +120,7 @@ else ifeq ($(ARCH),mac)
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/Resources
 	cp Info.plist dist/WaveEdit/WaveEdit.app/Contents
 	cp WaveEdit dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	cp -R logo* fonts waves dist/WaveEdit/WaveEdit.app/Contents/Resources
+	cp -R logo* fonts catalog dist/WaveEdit/WaveEdit.app/Contents/Resources
 	# Remap dylibs in executable
 	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 	cp /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS

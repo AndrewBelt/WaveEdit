@@ -544,7 +544,7 @@ void importPopup() {
 		newBank.importSamples(audio, audioLen, powf(10.0, gain / 20.0), offset, zoom, mode);
 		// Wave view
 		float samples[BANK_LEN * WAVE_LEN];
-		newBank.getSamples(samples);
+		newBank.getPostSamples(samples);
 		renderWave("##importSamples", 100, NULL, 0, samples, BANK_LEN * WAVE_LEN, NO_TOOL);
 
 		// Parameters

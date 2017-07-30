@@ -21,9 +21,9 @@ void Bank::setSamples(const float *in) {
 }
 
 
-void Bank::getSamples(float *out) {
+void Bank::getPostSamples(float *out) {
 	for (int j = 0; j < BANK_LEN; j++) {
-		memcpy(&out[j * WAVE_LEN], waves[j].samples, sizeof(float) * WAVE_LEN);
+		memcpy(&out[j * WAVE_LEN], waves[j].postSamples, sizeof(float) * WAVE_LEN);
 	}
 }
 
