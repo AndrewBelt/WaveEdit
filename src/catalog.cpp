@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 
 
@@ -47,8 +48,13 @@ void catalogInit() {
 	int categoriesLength = dirEntries(rootDir, categoryEntries, 128);
 
 	for (int i = 0; i < categoriesLength; i++) {
+		char categoryPath[PATH_MAX];
+		snprintf(categoryPath, sizeof(categoryPath), "%s/%s", rootPath, categoryEntries[i]->d_name);
+
 		// Directories only
-		if (categoryEntries[i]->d_type != DT_DIR)
+		struct stat categoryStat;
+		stat(categoryPath, &categoryStat);
+		if (!S_ISDIR(categoryStat.st_mode))
 			continue;
 
 		// Skip digits at beginning of filename
@@ -60,15 +66,19 @@ void catalogInit() {
 		CatalogCategory catalogCategory;
 		catalogCategory.name = name;
 
-		char categoryPath[PATH_MAX];
-		snprintf(categoryPath, sizeof(categoryPath), "%s/%s", rootPath, categoryEntries[i]->d_name);
 		DIR *categoryDir = opendir(categoryPath);
 		struct dirent *fileEntries[128];
 		int filesLength = dirEntries(categoryDir, fileEntries, 128);
 
 		for (int j = 0; j < filesLength; j++) {
+			char filePath[PATH_MAX];
+			snprintf(filePath, sizeof(filePath), "%s/%s", categoryPath, fileEntries[j]->d_name);
+
 			// Regular files only
-			if (fileEntries[j]->d_type != DT_REG)
+			// Directories only
+			struct stat fileStat;
+			stat(filePath, &fileStat);
+			if (!S_ISREG(fileStat.st_mode))
 				continue;
 
 			// Get the name without digits at the beginning
@@ -83,8 +93,6 @@ void catalogInit() {
 
 			CatalogFile catalogFile;
 			catalogFile.name = std::string(name, period - name);
-			char filePath[PATH_MAX];
-			snprintf(filePath, sizeof(filePath), "%s/%s", categoryPath, fileEntries[j]->d_name);
 
 			int length;
 			float *samples = loadAudio(filePath, &length);
