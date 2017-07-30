@@ -30,13 +30,13 @@ ifneq (,$(findstring linux,$(MACHINE)))
 	# Linux
 	ARCH = lin
 	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0)
-	LDFLAGS += -lGL -lpthread \
+	LDFLAGS += -lGL -lpthread -ldl \
+		-Llib/local/lib -lcurl -lssl -lcrypt \
+		$(shell pkg-config --libs jansson) \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
 		$(shell pkg-config --libs sndfile) \
-		$(shell pkg-config --libs libcurl) \
 		$(shell pkg-config --libs openssl) \
-		$(shell pkg-config --libs jansson) \
 		-lgtk-x11-2.0 -lgobject-2.0
 	SOURCES += src/noc_file_dialog_gtk.c
 else ifneq (,$(findstring apple,$(MACHINE)))
@@ -45,22 +45,26 @@ else ifneq (,$(findstring apple,$(MACHINE)))
 	FLAGS += -DARCH_MAC -mmacosx-version-min=10.7
 	CXXFLAGS += -stdlib=libc++
 	LDFLAGS += -stdlib=libc++ -lpthread -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
+		-Wl,-Bstatic \
+		-Llib/local/lib -lssl -lcrypt -lcurl \
+		$(shell pkg-config --libs --static jansson) \
+		-Wl,-Bdynamic \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
-		$(shell pkg-config --libs sndfile) \
-		$(shell pkg-config --libs libcurl) \
-		$(shell pkg-config --libs jansson)
+		$(shell pkg-config --libs sndfile)
 	SOURCES += src/noc_file_dialog_osx.m
 else ifneq (,$(findstring mingw,$(MACHINE)))
 	# Windows
 	ARCH = win
-	FLAGS += -DARCH_WIN -D_USE_MATH_DEFINES
+	FLAGS += -DARCH_WIN -D_USE_MATH_DEFINES -DCURL_STATIC
 	LDFLAGS += \
+		-Wl,-Bstatic \
+		-Llib/local/lib -lssl -lcrypt -lcurl \
+		$(shell pkg-config --libs --static jansson) \
+		-Wl,-Bdynamic \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
 		$(shell pkg-config --libs sndfile) \
-		$(shell pkg-config --libs libcurl) \
-		$(shell pkg-config --libs jansson) \
 		-lopengl32 -mwindows
 	SOURCES += src/noc_file_dialog_win.c
 else
@@ -100,7 +104,17 @@ dist: WaveEdit
 ifeq ($(ARCH),lin)
 	cp -R logo* fonts catalog dist/WaveEdit
 	cp WaveEdit WaveEdit.sh dist/WaveEdit
-	cp /usr/lib/libSDL2-2.0.so.0 /usr/lib/libsamplerate.so.0 /usr/lib/libsndfile.so.1 /usr/lib/libjansson.so.4 /usr/lib/libFLAC.so.8 /usr/lib/libogg.so.0 /usr/lib/libvorbis.so.0 /usr/lib/libvorbisenc.so.2 dist/WaveEdit
+	cp /usr/lib/libSDL2-2.0.so.0 dist/WaveEdit
+	cp /usr/lib/libsamplerate.so.0 dist/WaveEdit
+	cp /usr/lib/libsndfile.so.1 dist/WaveEdit
+	cp /usr/lib/libjansson.so.4 dist/WaveEdit
+	cp /usr/lib/libFLAC.so.8 dist/WaveEdit
+	cp /usr/lib/libogg.so.0 dist/WaveEdit
+	cp /usr/lib/libvorbis.so.0 dist/WaveEdit
+	cp /usr/lib/libvorbisenc.so.2 dist/WaveEdit
+	cp lib/local/lib/libcurl.so.4 dist/WaveEdit
+	cp /usr/lib/libssl.so.1.1 dist/WaveEdit
+	cp /usr/lib/libcrypto.so.1.1 dist/WaveEdit
 else ifeq ($(ARCH),win)
 	cp -R logo* fonts catalog dist/WaveEdit
 	cp WaveEdit.exe dist/WaveEdit

@@ -8,7 +8,7 @@ openssl() {
 		tar xf openssl-1.0.2l.tar.gz
 	fi
 	cd openssl-1.0.2l
-	./config --prefix=$LOCAL --openssldir=$LOCAL
+	./config shared --prefix=$LOCAL --openssldir=$LOCAL
 	make -j$(nproc)
 	make install
 	cd ..
@@ -30,5 +30,5 @@ libcurl() {
 }
 
 
-openssl
+# openssl
 libcurl

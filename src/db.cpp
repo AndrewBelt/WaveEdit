@@ -56,6 +56,7 @@ static void refresh() {
 	const char *path = "/x/fetch";
 	std::string url = stringf("%s%s?search=%s&quantity=%d&page=%d", api_host, path, searchTextEscaped, quantity, page);
 	curl_free(searchTextEscaped);
+	printf("Requesting %s\n", url.c_str());
 
 	std::string resText;
 	curl_easy_setopt(curl, CURLOPT_USERAGENT, "WaveEdit/" TOSTRING(VERSION));
@@ -119,6 +120,12 @@ static void refresh() {
 			}
 			json_decref(root);
 		}
+		else {
+			printf("Could not parse JSON\n");
+		}
+	}
+	else {
+		printf("Network error: %s\n", curl_easy_strerror(res));
 	}
 
 	activeRequests--;
