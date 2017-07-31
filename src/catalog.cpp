@@ -19,7 +19,7 @@ int alphaEntryComp(const void *a, const void *b) {
 Sorts alphabetically, omits entries beginning with "."
 Returns number of entries read
 */
-static int dirEntries(DIR *dir, struct dirent **entries, int len) {
+static int dirEntries(DIR *dir, struct dirent *entries, int len) {
 	if (!dir)
 		return 0;
 
@@ -31,12 +31,12 @@ static int dirEntries(DIR *dir, struct dirent **entries, int len) {
 		// Omit entries beginning with "."
 		if (entry->d_name[0] == '.')
 			continue;
-		entries[i] = entry;
+		entries[i] = *entry;
 		i++;
 	}
 
 	// Sort entries
-	qsort(entries, i, sizeof(struct dirent *), alphaEntryComp);
+	// qsort(entries, i, sizeof(struct dirent *), alphaEntryComp);
 	return i;
 }
 
@@ -44,12 +44,13 @@ static int dirEntries(DIR *dir, struct dirent **entries, int len) {
 void catalogInit() {
 	static const char *rootPath = "catalog";
 	DIR *rootDir = opendir(rootPath);
-	struct dirent *categoryEntries[128];
+	struct dirent categoryEntries[128];
 	int categoriesLength = dirEntries(rootDir, categoryEntries, 128);
 
 	for (int i = 0; i < categoriesLength; i++) {
 		char categoryPath[PATH_MAX];
-		snprintf(categoryPath, sizeof(categoryPath), "%s/%s", rootPath, categoryEntries[i]->d_name);
+		snprintf(categoryPath, sizeof(categoryPath), "%s/%s", rootPath, categoryEntries[i].d_name);
+		printf("category %s\n", categoryPath);
 
 		// Directories only
 		struct stat categoryStat;
@@ -59,7 +60,7 @@ void catalogInit() {
 
 		// Skip digits at beginning of filename
 		// e.g. "00Digital" -> "Digital"
-		const char *name = categoryEntries[i]->d_name;
+		const char *name = categoryEntries[i].d_name;
 		while (isdigit(*name))
 			name++;
 
@@ -67,12 +68,13 @@ void catalogInit() {
 		catalogCategory.name = name;
 
 		DIR *categoryDir = opendir(categoryPath);
-		struct dirent *fileEntries[128];
+		struct dirent fileEntries[128];
 		int filesLength = dirEntries(categoryDir, fileEntries, 128);
 
 		for (int j = 0; j < filesLength; j++) {
 			char filePath[PATH_MAX];
-			snprintf(filePath, sizeof(filePath), "%s/%s", categoryPath, fileEntries[j]->d_name);
+			snprintf(filePath, sizeof(filePath), "%s/%s", categoryPath, fileEntries[j].d_name);
+			printf("file %s\n", filePath);
 
 			// Regular files only
 			// Directories only
@@ -82,7 +84,7 @@ void catalogInit() {
 				continue;
 
 			// Get the name without digits at the beginning
-			const char *name = fileEntries[j]->d_name;
+			const char *name = fileEntries[j].d_name;
 			while (isdigit(*name))
 				name++;
 
