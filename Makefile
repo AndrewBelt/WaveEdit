@@ -23,6 +23,19 @@ SOURCES = \
 	$(wildcard src/*.cpp)
 
 
+all: WaveEdit
+
+run: WaveEdit
+	./WaveEdit
+
+debug: WaveEdit
+ifeq ($(ARCH),mac)
+	lldb ./WaveEdit
+else
+	gdb -ex 'run' ./WaveEdit
+endif
+
+
 # OS-specific
 MACHINE = $(shell gcc -dumpmachine)
 ifneq (,$(findstring linux,$(MACHINE)))
@@ -61,25 +74,16 @@ else ifneq (,$(findstring mingw,$(MACHINE)))
 		$(shell pkg-config --libs jansson) \
 		-lopengl32 -mwindows
 	SOURCES += src/noc_file_dialog_win.c
+	OBJECTS += info.o
+info.o: info.rc
+	windres $^ $@
 else
 	$(error Could not determine machine type. Try hacking around in the Makefile)
 endif
 
 
-OBJECTS = $(SOURCES:%=build/%.o)
+OBJECTS += $(SOURCES:%=build/%.o)
 
-
-all: WaveEdit
-
-run: WaveEdit
-	./WaveEdit
-
-debug: WaveEdit
-ifeq ($(ARCH),mac)
-	lldb ./WaveEdit
-else
-	gdb -ex 'run' ./WaveEdit
-endif
 
 WaveEdit: $(OBJECTS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
