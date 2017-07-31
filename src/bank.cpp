@@ -37,7 +37,7 @@ void Bank::duplicateToAll(int waveId) {
 }
 
 
-void Bank::importSamples(const float *in, int inLen, float gain, float offset, float zoom, ImportMode mode) {
+void Bank::importSamples(const float *in, int inLen, float gain, float offset, float zoom, float left, float right, ImportMode mode) {
 	zoom = clampf(zoom, -8.0, 8.0);
 	const int outLen = BANK_LEN * WAVE_LEN;
 	// A bunch of weird constants to align the resampler correctly
@@ -47,8 +47,8 @@ void Bank::importSamples(const float *in, int inLen, float gain, float offset, f
 	float W0 = X0 - offset * (W + X) / 2.0;
 	float Wl = W0 - W / 2.0;
 	float Wr = W0 + W / 2.0;
-	float Xl = clampf(Wl, 0, X);
-	float Xr = clampf(Wr, 0, X);
+	float Xl = clampf(Wl, left * X, right * X);
+	float Xr = clampf(Wr, left * X, right * X);
 	float Y = outLen;
 	float Yl = rescalef(Xl, Wl, Wr, 0, Y);
 	float Yr = rescalef(Xr, Wl, Wr, 0, Y);

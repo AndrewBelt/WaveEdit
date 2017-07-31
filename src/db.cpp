@@ -6,7 +6,7 @@
 #include "imgui.h"
 
 
-static const char *api_host = "https://waveeditonline.com";
+static const char *api_host = "http://waveeditonline.com";
 
 
 struct BankEntry {
@@ -25,6 +25,8 @@ std::vector<BankEntry> bankEntries;
 static int activeRequests = 0;
 static bool showUploadPopup = false;
 static bool showUploadedPopup = false;
+static char sekret[128] = "";
+static bool quarantine = false;
 
 static char searchText[128] = "";
 static const int quantity = 10;
@@ -46,20 +48,36 @@ static size_t write_string_callback(void *data, size_t size, size_t nmemb, void 
 }
 
 
+static CURL *db_curl_easy_init() {
+	CURL *curl = curl_easy_init();
+
+	static struct curl_slist *headers = NULL;
+	// Lazy create static headers
+	if (!headers) {
+		headers = curl_slist_append(headers, "Accept: application/json");
+		headers = curl_slist_append(headers, "Content-Type: application/json");
+		headers = curl_slist_append(headers, "Charsets: utf-8");
+	}
+
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+	curl_easy_setopt(curl, CURLOPT_USERAGENT, "WaveEdit/" TOSTRING(VERSION));
+	return curl;
+}
+
+
 static void refresh() {
 	activeRequests++;
 
 	// Make API request
-	CURL *curl = curl_easy_init();
+	CURL *curl = db_curl_easy_init();
 
 	char *searchTextEscaped = curl_easy_escape(curl, searchText, strlen(searchText));
-	const char *path = "/x/fetch";
+	const char *path = quarantine ? "/x/fetchquarantine" : "/x/fetch";
 	std::string url = stringf("%s%s?search=%s&quantity=%d&page=%d", api_host, path, searchTextEscaped, quantity, page);
 	curl_free(searchTextEscaped);
 	printf("Requesting %s\n", url.c_str());
 
 	std::string resText;
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, "WaveEdit/" TOSTRING(VERSION));
 	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_string_callback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resText);
@@ -74,7 +92,7 @@ static void refresh() {
 		json_error_t error;
 		json_t *root = json_loads(resText.c_str(), 0, &error);
 		if (root) {
-			json_t *entriesJ = json_object_get(root, "entries");
+			json_t *entriesJ = json_object_get(root, quarantine ? "quarantine" : "entries");
 			if (entriesJ) {
 				size_t entryId;
 				json_t *entryJ;
@@ -107,10 +125,10 @@ static void refresh() {
 					const char *wavfilebase64 = json_string_value(wavfilebase64J);
 					size_t samplesSize;
 					int16_t *samples = (int16_t*) base64_decode((unsigned char*) wavfilebase64, strlen(wavfilebase64), &samplesSize);
-					// if (samplesSize != sizeof(int16_t) * BANK_LEN * WAVE_LEN) {
-					// 	free(samples);
-					// 	continue;
-					// }
+					if (samplesSize != sizeof(int16_t) * BANK_LEN * WAVE_LEN) {
+						free(samples);
+						continue;
+					}
 					i16_to_f32(samples, bankEntry.samples, BANK_LEN * WAVE_LEN);
 					free(samples);
 
@@ -129,6 +147,56 @@ static void refresh() {
 	}
 
 	activeRequests--;
+}
+
+
+enum ValidateId {
+	VALIDATE,
+	INVALIDATE,
+	PURGE
+};
+
+/** command 0 is validate, 1 is invalidate, 2 is purge */
+static void validate(ValidateId validateId, std::string uuid) {
+	// Build JSON request
+	json_t *rootJ = json_object();
+
+	json_t *uuidJ = json_string(uuid.c_str());
+	json_object_set_new(rootJ, "uuid", uuidJ);
+
+	json_t *sekretJ = json_string(sekret);
+	json_object_set_new(rootJ, "sekret", sekretJ);
+
+	char *reqJson = json_dumps(rootJ, JSON_COMPACT);
+	json_decref(rootJ);
+	if (!reqJson)
+		return;
+
+	// Make API request
+	CURL *curl = db_curl_easy_init();
+
+	const char *path;
+	switch (validateId) {
+		case VALIDATE: path = "/x/validate"; break;
+		case INVALIDATE: path = "/x/invalidate"; break;
+		case PURGE: path = "/x/purge"; break;
+		default: assert(false); break;
+	}
+	std::string url = stringf("%s%s", api_host, path);
+	printf("Requesting %s\n", url.c_str());
+
+	std::string resText;
+	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+	curl_easy_setopt(curl, CURLOPT_POST, true);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_string_callback);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resText);
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, reqJson);
+	CURLcode res = curl_easy_perform(curl);
+	curl_easy_cleanup(curl);
+
+	printf("%s\n", resText.c_str());
+
+	free(reqJson);
 }
 
 
@@ -186,25 +254,16 @@ static void upload(std::string title, std::string attribution, std::string notes
 		return;
 
 	// Make API request
-	CURL *curl = curl_easy_init();
+	CURL *curl = db_curl_easy_init();
 
 	std::string url = stringf("%s/x/upload", api_host);
 	std::string resText;
-
-	struct curl_slist *headers = NULL;
-	headers = curl_slist_append(headers, "Accept: application/json");
-	headers = curl_slist_append(headers, "Content-Type: application/json");
-	headers = curl_slist_append(headers, "Charsets: utf-8");
-
-	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, "WaveEdit/" TOSTRING(VERSION));
 	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 	curl_easy_setopt(curl, CURLOPT_POST, true);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_string_callback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resText);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, reqJson);
 	CURLcode res = curl_easy_perform(curl);
-	curl_slist_free_all(headers);
 	curl_easy_cleanup(curl);
 
 	free(reqJson);
@@ -249,7 +308,9 @@ static void uploadPopup() {
 			openBrowser("https://creativecommons.org/publicdomain/zero/1.0/");
 
 		bool uploadable = (strlen(title) > 0 && strlen(attribution) > 0);
-		if (ImGui::Button(uploadable ? "Upload" : "(Upload)")) {
+		if (!uploadable)
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
+		if (ImGui::Button("Upload")) {
 			if (uploadable) {
 				std::thread uploadThread(upload, std::string(title), std::string(attribution), std::string(notes), currentBank);
 				uploadThread.detach();
@@ -259,6 +320,8 @@ static void uploadPopup() {
 				ImGui::CloseCurrentPopup();
 			}
 		}
+		if (!uploadable)
+			ImGui::PopStyleVar();
 		ImGui::SameLine();
 		if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
 
@@ -296,6 +359,12 @@ void dbPage() {
 			strcpy(searchText, "");
 			dirty = true;
 		}
+		if (sekret[0]) {
+			ImGui::SameLine();
+			if (ImGui::Checkbox("Quarantine", &quarantine)) {
+				dirty = true;
+			}
+		}
 
 		// ImGui::SameLine();
 		// ImGui::PushItemWidth(140.0);
@@ -327,6 +396,27 @@ void dbPage() {
 					currentBank.clear();
 					currentBank.setSamples(bankEntry.samples);
 				}
+				if (sekret[0]) {
+					if (quarantine) {
+						ImGui::SameLine();
+						if (ImGui::Button("Validate")) {
+							validate(VALIDATE, bankEntry.uuid);
+							dirty = true;
+						}
+						ImGui::SameLine();
+						if (ImGui::Button("Purge")) {
+							validate(PURGE, bankEntry.uuid);
+							dirty = true;
+						}
+					}
+					else {
+						ImGui::SameLine();
+						if (ImGui::Button("Invalidate")) {
+							validate(INVALIDATE, bankEntry.uuid);
+							dirty = true;
+						}
+					}
+				}
 				ImGui::EndGroup();
 				ImGui::Spacing();
 				ImGui::PopID();
@@ -357,4 +447,14 @@ void dbPage() {
 
 	uploadPopup();
 	uploadedPopup();
+}
+
+
+void dbInit() {
+	// Load sekret string
+	FILE *sekretFile = fopen("sekret.txt", "r");
+	if (sekretFile) {
+		fscanf(sekretFile, "%127s", sekret);
+		fclose(sekretFile);
+	}
 }

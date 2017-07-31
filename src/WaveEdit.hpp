@@ -186,7 +186,7 @@ struct Bank {
 	void setSamples(const float *in);
 	void getPostSamples(float *out);
 	void duplicateToAll(int waveId);
-	void importSamples(const float *in, int inLen, float gain, float offset, float zoom, ImportMode mode);
+	void importSamples(const float *in, int inLen, float gain, float offset, float zoom, float left, float right, ImportMode mode);
 	/** Binary dump of the bank struct */
 	void save(const char *filename);
 	void load(const char *filename);
@@ -290,4 +290,5 @@ void uiRender();
 // db.cpp
 ////////////////////
 
+void dbInit();
 void dbPage();

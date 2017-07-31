@@ -253,7 +253,7 @@ bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, f
 		ImRect cellBox = ImRect(cellPos, cellPos + cellSize - padding);
 		ImU32 col = ImGui::GetColorU32(ImGuiCol_FrameBg);
 		if (selectedId && *selectedId == j)
-			col = ImGui::GetColorU32(ImGuiCol_FrameBgActive);
+			col = ImGui::GetColorU32(ImGuiCol_WindowBg);
 		ImGui::RenderFrame(cellBox.Min, cellBox.Max, col, true, ImGui::GetStyle().FrameRounding);
 
 		// Draw lines

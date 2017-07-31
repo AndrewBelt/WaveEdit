@@ -68,6 +68,7 @@ int main(int argc, char **argv) {
 	historyClear();
 	catalogInit();
 	audioInit();
+	dbInit();
 
 	// Main loop
 	bool running = true;

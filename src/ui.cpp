@@ -511,6 +511,8 @@ void importPopup() {
 	static float gain;
 	static float offset;
 	static float zoom;
+	static float left;
+	static float right;
 	static ImportMode mode;
 	static float *audio = NULL;
 	static int audioLen;
@@ -527,6 +529,8 @@ void importPopup() {
 			offset = 0.0;
 			zoom = 0.0;
 			gain = 0.0;
+			left = 0.0;
+			right = 1.0;
 			mode = CLEAR_IMPORT;
 			audio = loadAudio(filename, &audioLen);
 			if (audioLengthMin <= audioLen && audioLen <= audioLengthMax)
@@ -541,16 +545,16 @@ void importPopup() {
 
 		// Import samples
 		newBank = currentBank;
-		newBank.importSamples(audio, audioLen, powf(10.0, gain / 20.0), offset, zoom, mode);
+		newBank.importSamples(audio, audioLen, powf(10.0, gain / 20.0), offset, zoom, left, right, mode);
 		// Wave view
 		float samples[BANK_LEN * WAVE_LEN];
 		newBank.getPostSamples(samples);
 		renderWave("##importSamples", 100, NULL, 0, samples, BANK_LEN * WAVE_LEN, NO_TOOL);
 
 		// Parameters
-		if (ImGui::Button("Reset Gain")) gain = 0.0;
-		ImGui::SameLine();
-		ImGui::SliderFloat("##gain", &gain, -40.0, 40.0, "Gain: %.2fdB");
+		ImGui::SliderFloat("##left", &left, 0.0, 1.0, "Left Trim: %.2f");
+
+		ImGui::SliderFloat("##right", &right, 0.0, 1.0, "Right Trim: %.2f");
 
 		if (ImGui::Button("Reset Offset")) offset = 0.0;
 		ImGui::SameLine();
@@ -559,6 +563,10 @@ void importPopup() {
 		if (ImGui::Button("Reset Zoom")) zoom = 0.0;
 		ImGui::SameLine();
 		ImGui::SliderFloat("##zoom", &zoom, -7.0, 7.0, "Zoom: %.2f");
+
+		if (ImGui::Button("Reset Gain")) gain = 0.0;
+		ImGui::SameLine();
+		ImGui::SliderFloat("##gain", &gain, -40.0, 40.0, "Gain: %.2fdB");
 
 		// Modes
 		if (ImGui::RadioButton("Clear", mode == CLEAR_IMPORT)) mode = CLEAR_IMPORT;
@@ -666,7 +674,7 @@ static void refreshStyle() {
 		style.Colors[ImGuiCol_BorderShadow]          = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
 		style.Colors[ImGuiCol_FrameBg]               = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
 		style.Colors[ImGuiCol_FrameBgHovered]        = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
-		style.Colors[ImGuiCol_FrameBgActive]         = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
+		style.Colors[ImGuiCol_FrameBgActive]         = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
 		style.Colors[ImGuiCol_TitleBg]               = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
 		style.Colors[ImGuiCol_TitleBgCollapsed]      = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
 		style.Colors[ImGuiCol_TitleBgActive]         = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
@@ -732,7 +740,7 @@ static void refreshStyle() {
 		style.Colors[ImGuiCol_BorderShadow]         = transparent;
 		style.Colors[ImGuiCol_FrameBg]              = base[0x1];
 		style.Colors[ImGuiCol_FrameBgHovered]       = base[0x1];
-		style.Colors[ImGuiCol_FrameBgActive]        = base[0x2];
+		style.Colors[ImGuiCol_FrameBgActive]        = base[0x1];
 		style.Colors[ImGuiCol_TitleBg]              = base[0x3];
 		style.Colors[ImGuiCol_TitleBgCollapsed]     = base[0x3];
 		style.Colors[ImGuiCol_TitleBgActive]        = base[0x3];
@@ -798,7 +806,7 @@ static void refreshStyle() {
 		style.Colors[ImGuiCol_BorderShadow]         = transparent;
 		style.Colors[ImGuiCol_FrameBg]              = base[0x6];
 		style.Colors[ImGuiCol_FrameBgHovered]       = base[0x6];
-		style.Colors[ImGuiCol_FrameBgActive]        = base[0x7];
+		style.Colors[ImGuiCol_FrameBgActive]        = base[0x6];
 		style.Colors[ImGuiCol_TitleBg]              = base[0x4];
 		style.Colors[ImGuiCol_TitleBgCollapsed]     = base[0x4];
 		style.Colors[ImGuiCol_TitleBgActive]        = base[0x4];
@@ -864,7 +872,7 @@ static void refreshStyle() {
 		style.Colors[ImGuiCol_BorderShadow]         = transparent;
 		style.Colors[ImGuiCol_FrameBg]              = base[0x6];
 		style.Colors[ImGuiCol_FrameBgHovered]       = base[0x6];
-		style.Colors[ImGuiCol_FrameBgActive]        = base[0x7];
+		style.Colors[ImGuiCol_FrameBgActive]        = base[0x6];
 		style.Colors[ImGuiCol_TitleBg]              = base[0x4];
 		style.Colors[ImGuiCol_TitleBgCollapsed]     = base[0x4];
 		style.Colors[ImGuiCol_TitleBgActive]        = base[0x4];

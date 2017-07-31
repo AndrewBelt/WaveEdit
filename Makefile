@@ -7,7 +7,6 @@ FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=core2 -ffa
 	$(shell pkg-config --cflags samplerate) \
 	$(shell pkg-config --cflags sndfile) \
 	$(shell pkg-config --cflags libcurl) \
-	$(shell pkg-config --cflags openssl) \
 	$(shell pkg-config --cflags jansson)
 CFLAGS =
 CXXFLAGS = -std=c++11
@@ -31,12 +30,11 @@ ifneq (,$(findstring linux,$(MACHINE)))
 	ARCH = lin
 	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0)
 	LDFLAGS += -lGL -lpthread -ldl \
-		-Llib/local/lib -lcurl -lssl -lcrypt \
+		-Llib/local/lib -lcurl \
 		$(shell pkg-config --libs jansson) \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
 		$(shell pkg-config --libs sndfile) \
-		$(shell pkg-config --libs openssl) \
 		-lgtk-x11-2.0 -lgobject-2.0
 	SOURCES += src/noc_file_dialog_gtk.c
 else ifneq (,$(findstring apple,$(MACHINE)))
@@ -57,7 +55,7 @@ else ifneq (,$(findstring mingw,$(MACHINE)))
 	FLAGS += -DARCH_WIN -D_USE_MATH_DEFINES -DCURL_STATIC
 	LDFLAGS += \
 		-Wl,-Bstatic \
-		-Llib/local/lib -lssl -lcrypt -lcurl \
+		-Llib/local/lib -lcurl \
 		$(shell pkg-config --libs --static jansson) \
 		-Wl,-Bdynamic \
 		$(shell pkg-config --libs sdl2) \
@@ -111,8 +109,6 @@ ifeq ($(ARCH),lin)
 	cp /usr/lib/libvorbis.so.0 dist/WaveEdit
 	cp /usr/lib/libvorbisenc.so.2 dist/WaveEdit
 	cp lib/local/lib/libcurl.so.4 dist/WaveEdit
-	cp /usr/lib/libssl.so.1.1 dist/WaveEdit
-	cp /usr/lib/libcrypto.so.1.1 dist/WaveEdit
 else ifeq ($(ARCH),win)
 	cp -R logo* fonts catalog dist/WaveEdit
 	cp WaveEdit.exe dist/WaveEdit
