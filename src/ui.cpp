@@ -33,7 +33,7 @@ static enum {
 	EDITOR_PAGE = 0,
 	EFFECT_PAGE,
 	GRID_PAGE,
-	WATERFALL_PAGE,
+	// WATERFALL_PAGE,
 	DB_PAGE,
 	NUM_PAGES
 } currentPage = EDITOR_PAGE;
@@ -493,7 +493,7 @@ void gridPage() {
 }
 
 
-void _3DViewPage() {
+void waterfallPage() {
 	ImGui::BeginChild("3D View", ImVec2(0, 0), true);
 	{
 		ImGui::PushItemWidth(-1.0);
@@ -624,7 +624,7 @@ void renderMain() {
 				"Waveform Editor",
 				"Effect Editor",
 				"Grid XY View",
-				"3D Z View",
+				// "3D Z View",
 				"WaveEdit Online"
 			};
 			static int hoveredTab = 0;
@@ -635,7 +635,7 @@ void renderMain() {
 		case EDITOR_PAGE: editorPage(); break;
 		case EFFECT_PAGE: effectPage(); break;
 		case GRID_PAGE: gridPage(); break;
-		case WATERFALL_PAGE: _3DViewPage(); break;
+		// case WATERFALL_PAGE: waterfallPage(); break;
 		case DB_PAGE: dbPage(); break;
 		default: break;
 		}

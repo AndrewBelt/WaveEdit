@@ -10,8 +10,8 @@ std::vector<CatalogCategory> catalogCategories;
 
 
 int alphaEntryComp(const void *a, const void *b) {
-	const struct dirent *ad = *(const struct dirent **) a;
-	const struct dirent *bd = *(const struct dirent **) b;
+	const struct dirent *ad = (const struct dirent *) a;
+	const struct dirent *bd = (const struct dirent *) b;
 	return strcmp(ad->d_name, bd->d_name);
 }
 
@@ -36,7 +36,7 @@ static int dirEntries(DIR *dir, struct dirent *entries, int len) {
 	}
 
 	// Sort entries
-	// qsort(entries, i, sizeof(struct dirent *), alphaEntryComp);
+	qsort(entries, i, sizeof(struct dirent), alphaEntryComp);
 	return i;
 }
 
