@@ -101,6 +101,9 @@ void catalogInit() {
 					memcpy(catalogFile.samples, samples, sizeof(float) * WAVE_LEN);
 					catalogCategory.files.push_back(catalogFile);
 				}
+				else {
+					printf("%s has length %d but needs %d\n", filePath, length, WAVE_LEN);
+				}
 				delete[] samples;
 			}
 		}
