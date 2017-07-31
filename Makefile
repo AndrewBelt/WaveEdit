@@ -31,10 +31,10 @@ ifneq (,$(findstring linux,$(MACHINE)))
 	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0)
 	LDFLAGS += -lGL -lpthread -ldl \
 		-Llib/local/lib -lcurl \
-		$(shell pkg-config --libs jansson) \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
 		$(shell pkg-config --libs sndfile) \
+		$(shell pkg-config --libs jansson) \
 		-lgtk-x11-2.0 -lgobject-2.0
 	SOURCES += src/noc_file_dialog_gtk.c
 else ifneq (,$(findstring apple,$(MACHINE)))
@@ -52,15 +52,13 @@ else ifneq (,$(findstring apple,$(MACHINE)))
 else ifneq (,$(findstring mingw,$(MACHINE)))
 	# Windows
 	ARCH = win
-	FLAGS += -DARCH_WIN -D_USE_MATH_DEFINES -DCURL_STATIC
+	FLAGS += -DARCH_WIN -D_USE_MATH_DEFINES
 	LDFLAGS += \
-		-Wl,-Bstatic \
 		-Llib/local/lib -lcurl \
-		$(shell pkg-config --libs --static jansson) \
-		-Wl,-Bdynamic \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
 		$(shell pkg-config --libs sndfile) \
+		$(shell pkg-config --libs jansson) \
 		-lopengl32 -mwindows
 	SOURCES += src/noc_file_dialog_win.c
 else
@@ -109,20 +107,6 @@ ifeq ($(ARCH),lin)
 	cp /usr/lib/libvorbis.so.0 dist/WaveEdit
 	cp /usr/lib/libvorbisenc.so.2 dist/WaveEdit
 	cp lib/local/lib/libcurl.so.4 dist/WaveEdit
-else ifeq ($(ARCH),win)
-	cp -R logo* fonts catalog dist/WaveEdit
-	cp WaveEdit.exe dist/WaveEdit
-	cp /mingw64/bin/libgcc_s_seh-1.dll dist/WaveEdit
-	cp /mingw64/bin/libsamplerate-0.dll dist/WaveEdit
-	cp /mingw64/bin/libsndfile-1.dll dist/WaveEdit
-	cp /mingw64/bin/libFLAC-8.dll dist/WaveEdit
-	cp /mingw64/bin/libogg-0.dll dist/WaveEdit
-	cp /mingw64/bin/libspeex-1.dll dist/WaveEdit
-	cp /mingw64/bin/libvorbis-0.dll dist/WaveEdit
-	cp /mingw64/bin/libvorbisenc-2.dll dist/WaveEdit
-	cp /mingw64/bin/libstdc++-6.dll dist/WaveEdit
-	cp /mingw64/bin/libwinpthread-1.dll dist/WaveEdit
-	cp /mingw64/bin/SDL2.dll dist/WaveEdit
 else ifeq ($(ARCH),mac)
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/Resources
@@ -140,6 +124,22 @@ else ifeq ($(ARCH),mac)
 	cp /usr/local/opt/jansson/lib/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	install_name_tool -change /usr/local/opt/jansson/lib/libjansson.4.dylib @executable_path/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+else ifeq ($(ARCH),win)
+	cp -R logo* fonts catalog dist/WaveEdit
+	cp WaveEdit.exe dist/WaveEdit
+	cp /mingw32/bin/libgcc_s_dw2-1.dll dist/WaveEdit
+	cp /mingw32/bin/libwinpthread-1.dll dist/WaveEdit
+	cp /mingw32/bin/libstdc++-6.dll dist/WaveEdit
+	cp /mingw32/bin/libjansson-4.dll dist/WaveEdit
+	cp /mingw32/bin/libsamplerate-0.dll dist/WaveEdit
+	cp /mingw32/bin/SDL2.dll dist/WaveEdit
+	cp /mingw32/bin/libsndfile-1.dll dist/WaveEdit
+	cp /mingw32/bin/libFLAC-8.dll dist/WaveEdit
+	cp /mingw32/bin/libogg-0.dll dist/WaveEdit
+	cp /mingw32/bin/libspeex-1.dll dist/WaveEdit
+	cp /mingw32/bin/libvorbis-0.dll dist/WaveEdit
+	cp /mingw32/bin/libvorbisenc-2.dll dist/WaveEdit
+	cp lib/local/bin/libcurl-4.dll dist/WaveEdit
 endif
 	cd dist && zip -9 -r $(DIST_ZIP) WaveEdit
 
