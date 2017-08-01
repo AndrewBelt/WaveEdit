@@ -7,7 +7,7 @@ Bank currentBank;
 static std::vector<Bank> history;
 static int currentIndex = 0;
 static double previousTime = -INFINITY;
-static const double delayTime = 0.5;
+static const double delayTime = 0.2;
 
 
 void historyPush() {

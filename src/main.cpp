@@ -84,7 +84,10 @@ int main(int argc, char **argv) {
 
 		// Build render buffer
 		ImGui_ImplSdl_NewFrame(window);
-		uiRender();
+		Uint32 flags = SDL_GetWindowFlags(window);
+		if ((flags & SDL_WINDOW_SHOWN) && !(flags & SDL_WINDOW_MINIMIZED)) {
+			uiRender();
+		}
 
 		// Render frame
 		glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
