@@ -218,7 +218,7 @@ static void uploadedPopup() {
 }
 
 
-static void upload(std::string title, std::string attribution, std::string notes, Bank bank) {
+static void upload(std::string title, std::string attribution, std::string notes) {
 	// Build JSON request
 	json_t *rootJ = json_object();
 
@@ -233,7 +233,7 @@ static void upload(std::string title, std::string attribution, std::string notes
 
 	// Get i16 samples
 	float *samples = new float[BANK_LEN * WAVE_LEN];
-	bank.getPostSamples(samples);
+	currentBank.getPostSamples(samples);
 	int16_t *samples_i16 = new int16_t[BANK_LEN * WAVE_LEN];
 	f32_to_i16(samples, samples_i16, BANK_LEN * WAVE_LEN);
 	delete[] samples;
@@ -312,7 +312,7 @@ static void uploadPopup() {
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
 		if (ImGui::Button("Upload")) {
 			if (uploadable) {
-				std::thread uploadThread(upload, std::string(title), std::string(attribution), std::string(notes), currentBank);
+				std::thread uploadThread(upload, std::string(title), std::string(attribution), std::string(notes));
 				uploadThread.detach();
 				strcpy(title, "");
 				strcpy(attribution, "");
