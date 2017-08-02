@@ -13,6 +13,21 @@ void Bank::clear() {
 }
 
 
+void Bank::swap(int i, int j) {
+	Wave tmp = waves[i];
+	waves[i] = waves[j];
+	waves[j] = tmp;
+}
+
+
+void Bank::shuffle() {
+	for (int j = BANK_LEN - 1; j >= 3; j--) {
+		int i = rand() % j;
+		swap(i, j);
+	}
+}
+
+
 void Bank::setSamples(const float *in) {
 	for (int j = 0; j < BANK_LEN; j++) {
 		memcpy(waves[j].samples, &in[j * WAVE_LEN], sizeof(float) * WAVE_LEN);
@@ -153,6 +168,6 @@ void Bank::saveWaves(const char *dirname) {
 		char filename[1024];
 		snprintf(filename, sizeof(filename), "%s/%02d.wav", dirname, b);
 
-		waves[b].save(filename);
+		waves[b].saveWAV(filename);
 	}
 }

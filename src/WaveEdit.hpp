@@ -160,7 +160,8 @@ struct Wave {
 	/** Applies effects to the sample array and resets the effect parameters */
 	void bakeEffects();
 	void randomizeEffects();
-	void save(const char *filename);
+	void saveWAV(const char *filename);
+	void loadWAV(const char *filename);
 };
 
 
@@ -183,6 +184,8 @@ struct Bank {
 	Wave waves[BANK_LEN];
 
 	void clear();
+	void swap(int i, int j);
+	void shuffle();
 	void setSamples(const float *in);
 	void getPostSamples(float *out);
 	void duplicateToAll(int waveId);

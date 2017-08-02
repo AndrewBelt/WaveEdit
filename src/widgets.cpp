@@ -4,7 +4,9 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 
-
+extern "C" {
+#include "noc/noc_file_dialog.h"
+}
 
 
 void waveLine(float *points, int pointsLen, float startIndex, float endIndex, float startValue, float endValue) {
@@ -339,36 +341,63 @@ bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, f
 	bool edited = false;
 
 	// Context menu
-	static bool clipboardActive = false;
-	static Wave clipboardWave;
+	if (selectedId) {
+		int id = *selectedId;
+		static bool clipboardActive = false;
+		static Wave clipboardWave;
 
-	if (ImGui::BeginPopup("Grid Context Menu")) {
-		if (ImGui::MenuItem("Copy")) {
-			if (selectedId) {
-				clipboardWave = bank->waves[*selectedId];
+		if (ImGui::BeginPopup("Grid Context Menu")) {
+			char menuName[128];
+			snprintf(menuName, sizeof(menuName), "(Wave %d)", id);
+			ImGui::MenuItem(menuName, NULL, false, false);
+			if (ImGui::MenuItem("Cut")) {
+				clipboardWave = bank->waves[id];
+				clipboardActive = true;
+				bank->waves[id].clear();
+				edited = true;
+			}
+			if (ImGui::MenuItem("Copy")) {
+				clipboardWave = bank->waves[id];
 				clipboardActive = true;
 			}
+			if (ImGui::MenuItem("Paste", NULL, false, clipboardActive)) {
+				bank->waves[id] = clipboardWave;
+				edited = true;
+			}
+			if (ImGui::MenuItem("Clear")) {
+				bank->waves[id].clear();
+				edited = true;
+			}
+			if (ImGui::MenuItem("Save Wave...")) {
+				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", NULL, NULL);
+				if (filename && selectedId) {
+					bank->waves[id].saveWAV(filename);
+				}
+			}
+			if (ImGui::MenuItem("Load Wave...")) {
+				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
+				if (filename && selectedId) {
+					bank->waves[id].loadWAV(filename);
+					edited = true;
+				}
+			}
+			ImGui::MenuItem("##spacer2", NULL, false, false);
+			ImGui::MenuItem("(Bank)", NULL, false, false);
+			if (ImGui::MenuItem("Duplicate To All")) {
+				if (selectedId)
+					bank->duplicateToAll(id);
+				edited = true;
+			}
+			if (ImGui::MenuItem("Shuffle Bank")) {
+				bank->shuffle();
+				edited = true;
+			}
+			if (ImGui::MenuItem("Clear All")) {
+				bank->clear();
+				edited = true;
+			}
+			ImGui::EndPopup();
 		}
-		if (ImGui::MenuItem("Paste", NULL, false, clipboardActive)) {
-			if (selectedId)
-				bank->waves[*selectedId] = clipboardWave;
-			edited = true;
-		}
-		if (ImGui::MenuItem("Duplicate To All")) {
-			if (selectedId)
-				bank->duplicateToAll(*selectedId);
-			edited = true;
-		}
-		if (ImGui::MenuItem("Clear")) {
-			if (selectedId)
-				bank->waves[*selectedId].clear();
-			edited = true;
-		}
-		if (ImGui::MenuItem("Clear All")) {
-			bank->clear();
-			edited = true;
-		}
-		ImGui::EndPopup();
 	}
 
 	return edited;

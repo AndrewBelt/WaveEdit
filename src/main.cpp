@@ -1,5 +1,7 @@
 #include "WaveEdit.hpp"
 
+#include <time.h>
+
 #include <SDL.h>
 #include <SDL_opengl.h>
 
@@ -34,6 +36,8 @@ void fixWorkingDirectory() {
 #endif
 
 int main(int argc, char **argv) {
+	srand(time(NULL));
+
 #ifdef ARCH_MAC
 	fixWorkingDirectory();
 #endif

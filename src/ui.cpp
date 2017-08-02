@@ -136,7 +136,7 @@ void renderMenuBar() {
 				historyClear();
 			}
 			if (ImGui::MenuItem("Open Bank...")) {
-				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV Bank\0*.wav\0", NULL, NULL);
+				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
 				if (filename) {
 					currentBank.loadWAV(filename);
 					snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
@@ -147,7 +147,7 @@ void renderMenuBar() {
 				currentBank.saveWAV(lastFilename);
 			}
 			if (ImGui::MenuItem("Save Bank As...")) {
-				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV Bank\0*.wav\0", NULL, NULL);
+				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", NULL, NULL);
 				if (filename) {
 					currentBank.saveWAV(filename);
 					snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
@@ -204,7 +204,7 @@ void renderMenuBar() {
 		if (ImGui::BeginMenu("Help")) {
 			if (ImGui::MenuItem("Online Manual", NULL, false))
 				openBrowser("http://synthtech.com/WaveEdit");
-			// if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
+			if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();
