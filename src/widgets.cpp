@@ -165,7 +165,7 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 	// Draw lines
 	if (lines) {
 		for (int i = 0; i < linesLen; i++) {
-			ImVec2 pos = ImVec2(rescalef(i, 0, linesLen - 1, inner.Min.x, inner.Max.x), rescalef(lines[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
+			ImVec2 pos = ImVec2(rescalef(i, 0, linesLen, inner.Min.x, inner.Max.x), rescalef(lines[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
 			if (i > 0)
 				window->DrawList->AddLine(lastPos, pos, ImGui::GetColorU32(ImGuiCol_PlotLines));
 			lastPos = pos;
@@ -174,7 +174,7 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 	// Draw points
 	if (points) {
 		for (int i = 0; i < pointsLen; i++) {
-			ImVec2 pos = ImVec2(rescalef(i, 0, pointsLen - 1, inner.Min.x, inner.Max.x), rescalef(points[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
+			ImVec2 pos = ImVec2(rescalef(i, 0, pointsLen, inner.Min.x, inner.Max.x), rescalef(points[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
 			window->DrawList->AddCircleFilled(pos + ImVec2(0.5, 0.5), 2.0, ImGui::GetColorU32(ImGuiCol_PlotLines), 12);
 		}
 	}
@@ -184,7 +184,7 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 }
 
 
-bool renderHistogram(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool) {
+bool renderHistogram(const char *name, float height, float *bars, int barsLen, const float *ghost, int ghostLen, enum Tool tool) {
 	ImGuiContext &g = *GImGui;
 	ImGuiWindow *window = ImGui::GetCurrentWindow();
 	const ImGuiStyle &style = g.Style;
@@ -199,7 +199,7 @@ bool renderHistogram(const char *name, float height, float *points, int pointsLe
 	if (!ImGui::ItemAdd(box, NULL))
 		return false;
 
-	bool edited = editorBehavior(id, box, inner, points, pointsLen, -0.5, pointsLen - 0.5, 1.0, 0.0, tool);
+	bool edited = editorBehavior(id, box, inner, bars, barsLen, -0.5, barsLen - 0.5, 1.0, 0.0, tool);
 
 	// Draw frame
 	ImGui::RenderFrame(box.Min, box.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
@@ -207,18 +207,28 @@ bool renderHistogram(const char *name, float height, float *points, int pointsLe
 	// Draw bars
 	ImGui::PushClipRect(box.Min, box.Max, true);
 	const float rounding = 0.0;
-	for (int i = 0; i < pointsLen; i++) {
-		float value = points[i];
-		ImVec2 pos0 = ImVec2(rescalef(i, 0, pointsLen, inner.Min.x, inner.Max.x), rescalef(value, 0.0, 1.0, inner.Max.y, inner.Min.y));
-		ImVec2 pos1 = ImVec2(rescalef(i + 1, 0, pointsLen, inner.Min.x, inner.Max.x) - 1, inner.Max.y);
+	for (int i = 0; i < barsLen; i++) {
+		float value = bars[i];
+		ImVec2 pos0 = ImVec2(rescalef(i, 0, barsLen, inner.Min.x, inner.Max.x), rescalef(value, 0.0, 1.0, inner.Max.y, inner.Min.y));
+		ImVec2 pos1 = ImVec2(rescalef(i + 1, 0, barsLen, inner.Min.x, inner.Max.x) - 1, inner.Max.y);
 		window->DrawList->AddRectFilled(pos0, pos1, ImGui::GetColorU32(ImGuiCol_PlotHistogram), rounding);
 	}
-	for (int i = 0; i < linesLen; i++) {
-		float value = lines[i];
-		ImVec2 pos0 = ImVec2(rescalef(i, 0, linesLen, inner.Min.x, inner.Max.x), rescalef(value, 0.0, 1.0, inner.Max.y, inner.Min.y));
-		ImVec2 pos1 = ImVec2(rescalef(i + 1, 0, linesLen, inner.Min.x, inner.Max.x) - 1, inner.Max.y);
+	// Draw ghost bars
+	for (int i = 0; i < ghostLen; i++) {
+		float value = ghost[i];
+		ImVec2 pos0 = ImVec2(rescalef(i, 0, ghostLen, inner.Min.x, inner.Max.x), rescalef(value, 0.0, 1.0, inner.Max.y, inner.Min.y));
+		ImVec2 pos1 = ImVec2(rescalef(i + 1, 0, ghostLen, inner.Min.x, inner.Max.x) - 1, inner.Max.y);
 		window->DrawList->AddRectFilled(pos0, pos1, ImGui::GetColorU32(ImGuiCol_PlotHistogramHovered), rounding);
 	}
+	// Draw numbers
+	// for (int i = 0; i < barsLen; i += 2) {
+	// 	ImVec2 pos = ImVec2(rescalef(i, 0, barsLen, inner.Min.x, inner.Max.x), inner.Max.y - 15);
+	// 	char label[64];
+	// 	snprintf(label, sizeof(label), "%d", i);
+	// 	ImVec2 labelPos = pos + ImVec2(2, 2);
+	// 	window->DrawList->AddText(labelPos, ImGui::GetColorU32(ImGuiCol_PlotLines), label);
+	// }
+
 	ImGui::PopClipRect();
 
 	return edited;

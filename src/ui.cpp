@@ -103,6 +103,43 @@ void refreshMorphSnap() {
 	}
 }
 
+static void menuNewBank() {
+	currentBank.clear();
+	lastFilename[0] = '\0';
+	historyPush();
+}
+
+static void menuOpenBank() {
+	const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
+	if (filename) {
+		currentBank.loadWAV(filename);
+		snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
+		historyPush();
+	}
+}
+
+static void menuSaveBankAs() {
+	const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", NULL, NULL);
+	if (filename) {
+		currentBank.saveWAV(filename);
+		snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
+	}
+}
+
+static void menuSaveBank() {
+	if (lastFilename[0] != '\0')
+		currentBank.saveWAV(lastFilename);
+	else
+		menuSaveBankAs();
+}
+
+static void menuSaveWaves() {
+	const char *dirname = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN | NOC_FILE_DIALOG_DIR, NULL, NULL, NULL);
+	if (dirname)
+		currentBank.saveWaves(dirname);
+}
+
+
 void renderMenuBar() {
 	// HACK
 	// Display a window on top of the menu with the logo, since I'm too lazy to make my own custom MenuImageItem widget
@@ -130,34 +167,16 @@ void renderMenuBar() {
 		}
 		// File
 		if (ImGui::BeginMenu("File")) {
-			if (ImGui::MenuItem("New Bank")) {
-				currentBank.clear();
-				lastFilename[0] = '\0';
-				historyClear();
-			}
-			if (ImGui::MenuItem("Open Bank...")) {
-				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
-				if (filename) {
-					currentBank.loadWAV(filename);
-					snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
-					historyClear();
-				}
-			}
-			if (ImGui::MenuItem("Save Bank", NULL, false, lastFilename[0] != '\0')) {
-				currentBank.saveWAV(lastFilename);
-			}
-			if (ImGui::MenuItem("Save Bank As...")) {
-				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", NULL, NULL);
-				if (filename) {
-					currentBank.saveWAV(filename);
-					snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
-				}
-			}
-			if (ImGui::MenuItem("Save Waves To Folder...", NULL, false, true)) {
-				const char *dirname = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN | NOC_FILE_DIALOG_DIR, NULL, NULL, NULL);
-				if (dirname)
-					currentBank.saveWaves(dirname);
-			}
+			if (ImGui::MenuItem("New Bank", "Ctrl+N"))
+				menuNewBank();
+			if (ImGui::MenuItem("Open Bank...", "Ctrl+O"))
+				menuOpenBank();
+			if (ImGui::MenuItem("Save Bank", "Ctrl+S"))
+				menuSaveBank();
+			if (ImGui::MenuItem("Save Bank As...", "Ctrl+Shift+S"))
+				menuSaveBankAs();
+			if (ImGui::MenuItem("Save Waves To Folder...", NULL, false, true))
+				menuSaveWaves();
 			if (ImGui::MenuItem("Import Audio...", NULL, false, true))
 				showImportPopup = true;
 
@@ -331,6 +350,7 @@ void editorPage() {
 			historyPush();
 		}
 
+		ImGui::Text("Effects");
 		for (int i = 0; i < EFFECTS_LEN; i++) {
 			effectSlider((EffectID) i);
 		}
@@ -345,7 +365,7 @@ void editorPage() {
 			historyPush();
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Apply")) {
+		if (ImGui::Button("Bake")) {
 			currentBank.waves[selectedWave].bakeEffects();
 			historyPush();
 		}
@@ -355,7 +375,7 @@ void editorPage() {
 			historyPush();
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Cancel")) {
+		if (ImGui::Button("Reset")) {
 			currentBank.waves[selectedWave].clearEffects();
 			historyPush();
 		}
@@ -516,7 +536,7 @@ void importPopup() {
 	static ImportMode mode;
 	static float *audio = NULL;
 	static int audioLen;
-	static Bank newBank;
+	static Bank menuNewBank;
 
 	const int audioLengthMin = 32;
 	const int audioLengthMax = 44100 * 20;
@@ -544,11 +564,11 @@ void importPopup() {
 		ImGui::PushItemWidth(-1.0);
 
 		// Import samples
-		newBank = currentBank;
-		newBank.importSamples(audio, audioLen, powf(10.0, gain / 20.0), offset, zoom, left, right, mode);
+		menuNewBank = currentBank;
+		menuNewBank.importSamples(audio, audioLen, powf(10.0, gain / 20.0), offset, zoom, left, right, mode);
 		// Wave view
 		float samples[BANK_LEN * WAVE_LEN];
-		newBank.getPostSamples(samples);
+		menuNewBank.getPostSamples(samples);
 		renderWave("##importSamples", 100, NULL, 0, samples, BANK_LEN * WAVE_LEN, NO_TOOL);
 
 		// Parameters
@@ -581,7 +601,7 @@ void importPopup() {
 		bool cleanup = false;
 
 		if (ImGui::Button("Import")) {
-			currentBank = newBank;
+			currentBank = menuNewBank;
 			historyPush();
 			ImGui::CloseCurrentPopup();
 		}
@@ -912,6 +932,8 @@ static void refreshStyle() {
 
 
 void uiInit() {
+	// ImGui::GetIO().OSXBehaviors;
+
 	ImGui::GetIO().IniFilename = NULL;
 
 	// Load fonts
@@ -946,14 +968,22 @@ void uiDestroy() {
 
 
 void uiRender() {
-	// Key commands
-	if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(SDLK_z)) {
-		// History
-		if (ImGui::GetIO().KeyShift)
-			historyRedo();
-		else
-			historyUndo();
-	}
-
 	renderMain();
+
+	// Key commands
+	ImGuiIO &io = ImGui::GetIO();
+	if (ImGui::IsKeyPressed(SDLK_n) && io.KeyCtrl && !io.KeyShift && !io.KeyAlt && !io.KeySuper)
+		menuNewBank();
+	if (ImGui::IsKeyPressed(SDLK_o) && io.KeyCtrl && !io.KeyShift && !io.KeyAlt && !io.KeySuper)
+		menuOpenBank();
+	if (ImGui::IsKeyPressed(SDLK_s) && io.KeyCtrl && !io.KeyShift && !io.KeyAlt && !io.KeySuper)
+		menuSaveBank();
+	if (ImGui::IsKeyPressed(SDLK_s) && io.KeyCtrl && io.KeyShift && !io.KeyAlt && !io.KeySuper)
+		menuSaveBankAs();
+	if (ImGui::IsKeyPressed(SDLK_z) && io.KeyCtrl && !io.KeyShift && !io.KeyAlt && !io.KeySuper)
+		historyUndo();
+	if (ImGui::IsKeyPressed(SDLK_z) && io.KeyCtrl && io.KeyShift && !io.KeyAlt && !io.KeySuper)
+		historyRedo();
+	if (io.InputCharacters[0] == SDLK_SPACE)
+		playEnabled = !playEnabled;
 }

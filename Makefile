@@ -1,4 +1,4 @@
-VERSION = v0.6
+VERSION = v0.6.1
 
 FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=core2 -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
@@ -42,7 +42,7 @@ ifneq (,$(findstring linux,$(MACHINE)))
 	# Linux
 	ARCH = lin
 	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0)
-	LDFLAGS += -lGL -lpthread -ldl \
+	LDFLAGS += -lGL -lpthread \
 		-Llib/local/lib -lcurl \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \

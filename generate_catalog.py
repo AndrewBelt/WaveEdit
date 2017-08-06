@@ -88,8 +88,6 @@ def Glitch():
 	saveWAV16("03Glitch/%02dUnsigned Sine.wav" % i, sine_unsigned); i += 1
 	saveWAV16("03Glitch/%02dIncomplete Sine.wav" % i, np.sin(2*np.pi * t * 3/4)); i += 1
 
-Glitch()
-
 # Noise
 
 def Noise():
