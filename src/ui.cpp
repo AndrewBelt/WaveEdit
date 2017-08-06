@@ -241,10 +241,6 @@ void renderPreview() {
 	ImGui::SliderFloat("##playFrequency", &playFrequency, 1.0f, 10000.0f, "Frequency: %.2f Hz", 3.0f);
 
 	ImGui::Checkbox("Morph Snap", &morphSnap);
-	ImGui::SameLine();
-	if (ImGui::RadioButton("Morph XY", playModeXY)) playModeXY = true;
-	ImGui::SameLine();
-	if (ImGui::RadioButton("Morph Z", !playModeXY)) playModeXY = false;
 	if (playModeXY) {
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-1.0);
@@ -651,10 +647,11 @@ void renderMain() {
 			ImGui::TabLabels(NUM_PAGES, tabLabels, (int*)&currentPage, NULL, false, &hoveredTab);
 		}
 		// Page
+		playModeXY = false;
 		switch (currentPage) {
 		case EDITOR_PAGE: editorPage(); break;
 		case EFFECT_PAGE: effectPage(); break;
-		case GRID_PAGE: gridPage(); break;
+		case GRID_PAGE: playModeXY = true; gridPage(); break;
 		// case WATERFALL_PAGE: waterfallPage(); break;
 		case DB_PAGE: dbPage(); break;
 		default: break;
