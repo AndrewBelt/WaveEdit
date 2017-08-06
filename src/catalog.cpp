@@ -50,7 +50,6 @@ void catalogInit() {
 	for (int i = 0; i < categoriesLength; i++) {
 		char categoryPath[PATH_MAX];
 		snprintf(categoryPath, sizeof(categoryPath), "%s/%s", rootPath, categoryEntries[i].d_name);
-		printf("category %s\n", categoryPath);
 
 		// Directories only
 		struct stat categoryStat;
@@ -74,7 +73,6 @@ void catalogInit() {
 		for (int j = 0; j < filesLength; j++) {
 			char filePath[PATH_MAX];
 			snprintf(filePath, sizeof(filePath), "%s/%s", categoryPath, fileEntries[j].d_name);
-			printf("file %s\n", filePath);
 
 			// Regular files only
 			// Directories only

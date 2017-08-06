@@ -53,7 +53,7 @@ ifneq (,$(findstring linux,$(MACHINE)))
 else ifneq (,$(findstring apple,$(MACHINE)))
 	# Mac
 	ARCH = mac
-	FLAGS += -DARCH_MAC -mmacosx-version-min=10.7
+	FLAGS += -DARCH_MAC
 	CXXFLAGS += -stdlib=libc++
 	LDFLAGS += -stdlib=libc++ -lpthread -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
 		$(shell pkg-config --libs sdl2) \

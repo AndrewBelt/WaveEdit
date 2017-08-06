@@ -167,13 +167,13 @@ void renderMenuBar() {
 		}
 		// File
 		if (ImGui::BeginMenu("File")) {
-			if (ImGui::MenuItem("New Bank", "Ctrl+N"))
+			if (ImGui::MenuItem("New Bank", ImGui::GetIO().OSXBehaviors ? "Cmd+N" : "Ctrl+N"))
 				menuNewBank();
-			if (ImGui::MenuItem("Open Bank...", "Ctrl+O"))
+			if (ImGui::MenuItem("Open Bank...", ImGui::GetIO().OSXBehaviors ? "Cmd+O" : "Ctrl+O"))
 				menuOpenBank();
-			if (ImGui::MenuItem("Save Bank", "Ctrl+S"))
+			if (ImGui::MenuItem("Save Bank", ImGui::GetIO().OSXBehaviors ? "Cmd+S" : "Ctrl+S"))
 				menuSaveBank();
-			if (ImGui::MenuItem("Save Bank As...", "Ctrl+Shift+S"))
+			if (ImGui::MenuItem("Save Bank As...", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+S" : "Ctrl+Shift+S"))
 				menuSaveBankAs();
 			if (ImGui::MenuItem("Save Waves To Folder...", NULL, false, true))
 				menuSaveWaves();
@@ -184,9 +184,9 @@ void renderMenuBar() {
 		}
 		// Edit
 		if (ImGui::BeginMenu("Edit")) {
-			if (ImGui::MenuItem("Undo", "Ctrl+Z", false))
+			if (ImGui::MenuItem("Undo", ImGui::GetIO().OSXBehaviors ? "Cmd+Z" : "Ctrl+Z", false))
 				historyUndo();
-			if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z", false))
+			if (ImGui::MenuItem("Redo", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+Z" : "Ctrl+Shift+Z", false))
 				historyRedo();
 			ImGui::EndMenu();
 		}
@@ -223,7 +223,7 @@ void renderMenuBar() {
 		if (ImGui::BeginMenu("Help")) {
 			if (ImGui::MenuItem("Online Manual", NULL, false))
 				openBrowser("http://synthtech.com/WaveEdit");
-			if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
+			// if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();
@@ -969,18 +969,20 @@ void uiRender() {
 
 	// Key commands
 	ImGuiIO &io = ImGui::GetIO();
-	if (ImGui::IsKeyPressed(SDLK_n) && io.KeyCtrl && !io.KeyShift && !io.KeyAlt && !io.KeySuper)
-		menuNewBank();
-	if (ImGui::IsKeyPressed(SDLK_o) && io.KeyCtrl && !io.KeyShift && !io.KeyAlt && !io.KeySuper)
-		menuOpenBank();
-	if (ImGui::IsKeyPressed(SDLK_s) && io.KeyCtrl && !io.KeyShift && !io.KeyAlt && !io.KeySuper)
-		menuSaveBank();
-	if (ImGui::IsKeyPressed(SDLK_s) && io.KeyCtrl && io.KeyShift && !io.KeyAlt && !io.KeySuper)
-		menuSaveBankAs();
-	if (ImGui::IsKeyPressed(SDLK_z) && io.KeyCtrl && !io.KeyShift && !io.KeyAlt && !io.KeySuper)
-		historyUndo();
-	if (ImGui::IsKeyPressed(SDLK_z) && io.KeyCtrl && io.KeyShift && !io.KeyAlt && !io.KeySuper)
-		historyRedo();
+	if (io.OSXBehaviors ? io.KeySuper : io.KeyCtrl) {
+		if (ImGui::IsKeyPressed(SDLK_n) && !io.KeyShift && !io.KeyAlt)
+			menuNewBank();
+		if (ImGui::IsKeyPressed(SDLK_o) && !io.KeyShift && !io.KeyAlt)
+			menuOpenBank();
+		if (ImGui::IsKeyPressed(SDLK_s) && !io.KeyShift && !io.KeyAlt)
+			menuSaveBank();
+		if (ImGui::IsKeyPressed(SDLK_s) && io.KeyShift && !io.KeyAlt)
+			menuSaveBankAs();
+		if (ImGui::IsKeyPressed(SDLK_z) && !io.KeyShift && !io.KeyAlt)
+			historyUndo();
+		if (ImGui::IsKeyPressed(SDLK_z) && io.KeyShift && !io.KeyAlt)
+			historyRedo();
+	}
 	if (io.InputCharacters[0] == SDLK_SPACE)
 		playEnabled = !playEnabled;
 }
