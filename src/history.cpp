@@ -5,7 +5,7 @@
 Bank currentBank;
 
 static std::vector<Bank> history;
-static int currentIndex = 0;
+static int currentIndex = -1;
 static double previousTime = -INFINITY;
 static const double delayTime = 0.2;
 
@@ -41,6 +41,6 @@ void historyRedo() {
 
 void historyClear() {
 	history.clear();
-	currentIndex = 0;
+	currentIndex = -1;
 	previousTime = -INFINITY;
 }

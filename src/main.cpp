@@ -68,8 +68,9 @@ int main(int argc, char **argv) {
 
 	// Initialize modules
 	uiInit();
-	currentBank.load("autosave.dat");
 	historyClear();
+	currentBank.load("autosave.dat");
+	historyPush();
 	catalogInit();
 	audioInit();
 	dbInit();
@@ -102,7 +103,7 @@ int main(int argc, char **argv) {
 		SDL_GL_SwapWindow(window);
 	}
 
-	currentBank.save("autosave.dat");
+	// currentBank.save("autosave.dat");
 
 	// Cleanup
 	uiDestroy();
