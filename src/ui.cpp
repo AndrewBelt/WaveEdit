@@ -103,6 +103,10 @@ void refreshMorphSnap() {
 	}
 }
 
+static void menuOnlineHelp() {
+	openBrowser("http://synthtech.com/WaveEdit");
+}
+
 static void menuNewBank() {
 	currentBank.clear();
 	lastFilename[0] = '\0';
@@ -221,8 +225,8 @@ void renderMenuBar() {
 		}
 		// Help
 		if (ImGui::BeginMenu("Help")) {
-			if (ImGui::MenuItem("Online Manual", NULL, false))
-				openBrowser("http://synthtech.com/WaveEdit");
+			if (ImGui::MenuItem("Online Help", "F1", false))
+				menuOnlineHelp();
 			// if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
 			ImGui::EndMenu();
 		}
@@ -983,6 +987,10 @@ void uiRender() {
 		if (ImGui::IsKeyPressed(SDLK_z) && io.KeyShift && !io.KeyAlt)
 			historyRedo();
 	}
+	// I have NO idea why the scancode is needed here but the keycodes are needed for the letters.
+	// It looks like SDLZ_F1 is not defined correctly or something.
+	if (ImGui::IsKeyPressed(SDL_SCANCODE_F1))
+		menuOnlineHelp();
 	if (io.InputCharacters[0] == SDLK_SPACE)
 		playEnabled = !playEnabled;
 }

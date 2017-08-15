@@ -435,6 +435,7 @@ void dbPage() {
 		int pageOne = page + 1;
 		ImGui::InputInt("##page", &pageOne, 1, 10);
 		page = pageOne - 1;
+		page = maxi(0, page);
 		ImGui::PopItemWidth();
 
 		if (oldPage != page) {

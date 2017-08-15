@@ -101,3 +101,9 @@ def Noise():
 	brown = np.cumsum(white)
 	saveWAV16("04Noise/%02dBrown.wav" % i, normalize(brown)); i += 1
 
+
+
+shepard = np.zeros(NUM_SAMPLES * 64)
+for i in range(128):
+	
+saveWAV16("Shepard.wav", )

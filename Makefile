@@ -42,7 +42,8 @@ ifneq (,$(findstring linux,$(MACHINE)))
 	# Linux
 	ARCH = lin
 	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0)
-	LDFLAGS += -lGL -lpthread \
+	LDFLAGS += -static-libstdc++ -static-libgcc \
+		-lGL -lpthread \
 		-Llib/local/lib -lcurl \
 		$(shell pkg-config --libs sdl2) \
 		$(shell pkg-config --libs samplerate) \
