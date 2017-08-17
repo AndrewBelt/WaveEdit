@@ -5,6 +5,7 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 
+#include "imconfig.h"
 #include "imgui.h"
 #include "imgui/examples/sdl_opengl2_example/imgui_impl_sdl.h"
 

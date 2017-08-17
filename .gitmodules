@@ -6,7 +6,7 @@
 	url = https://github.com/lvandeve/lodepng.git
 [submodule "imgui"]
 	path = imgui
-	url = https://github.com/ocornut/imgui.git
+	url = https://github.com/AndrewBelt/imgui.git
 [submodule "pffft"]
 	path = pffft
 	url = https://github.com/marton78/pffft.git
