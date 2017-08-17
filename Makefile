@@ -2,12 +2,7 @@ VERSION = v0.6.1
 
 FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=core2 -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
-	-I. -Iimgui -Inoc \
-	$(shell pkg-config --cflags sdl2) \
-	$(shell pkg-config --cflags samplerate) \
-	$(shell pkg-config --cflags sndfile) \
-	$(shell pkg-config --cflags libcurl) \
-	$(shell pkg-config --cflags jansson)
+	-I. -Iimgui -Inoc -Iext/include -Iext/include/SDL2
 CFLAGS =
 CXXFLAGS = -std=c++11
 LDFLAGS =
@@ -41,7 +36,12 @@ MACHINE = $(shell gcc -dumpmachine)
 ifneq (,$(findstring linux,$(MACHINE)))
 	# Linux
 	ARCH = lin
-	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0)
+	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0) \
+		$(shell pkg-config --cflags sdl2) \
+		$(shell pkg-config --cflags samplerate) \
+		$(shell pkg-config --cflags sndfile) \
+		$(shell pkg-config --cflags libcurl) \
+		$(shell pkg-config --cflags jansson)
 	LDFLAGS += -static-libstdc++ -static-libgcc \
 		-lGL -lpthread \
 		-Llib/local/lib -lcurl \
@@ -54,14 +54,15 @@ ifneq (,$(findstring linux,$(MACHINE)))
 else ifneq (,$(findstring apple,$(MACHINE)))
 	# Mac
 	ARCH = mac
-	FLAGS += -DARCH_MAC
+	FLAGS += -DARCH_MAC \
+		-isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk \
+		-mmacosx-version-min=10.7
 	CXXFLAGS += -stdlib=libc++
-	LDFLAGS += -stdlib=libc++ -lpthread -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
-		$(shell pkg-config --libs sdl2) \
-		$(shell pkg-config --libs samplerate) \
-		$(shell pkg-config --libs sndfile) \
-		$(shell pkg-config --libs jansson) \
-		$(shell pkg-config --libs libcurl)
+	LDFLAGS += -mmacosx-version-min=10.7 \
+		-stdlib=libc++ -lpthread \
+		-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
+		-lcurl \
+		-L./ext/lib -lsdl2 -lsamplerate -lsndfile -ljansson
 	SOURCES += src/noc_file_dialog_osx.m
 else ifneq (,$(findstring mingw,$(MACHINE)))
 	# Windows
@@ -120,14 +121,14 @@ else ifeq ($(ARCH),mac)
 	cp -R logo*.png logo.icns fonts catalog dist/WaveEdit/WaveEdit.app/Contents/Resources
 	# Remap dylibs in executable
 	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp /usr/local/opt/libsamplerate/lib/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change /usr/local/opt/libsamplerate/lib/libsamplerate.0.dylib @executable_path/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp /usr/local/lib/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change /usr/local/lib/libsndfile.1.dylib @executable_path/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp /usr/local/opt/jansson/lib/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change /usr/local/opt/jansson/lib/libjansson.4.dylib @executable_path/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	cp $(PWD)/ext/lib/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/ext/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	cp $(PWD)/ext/lib/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/ext/lib/libsamplerate.0.dylib @executable_path/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	cp $(PWD)/ext/lib/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/ext/lib/libsndfile.1.dylib @executable_path/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	cp $(PWD)/ext/lib/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/ext/lib/libjansson.4.dylib @executable_path/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 else ifeq ($(ARCH),win)
 	cp -R logo*.png fonts catalog dist/WaveEdit
