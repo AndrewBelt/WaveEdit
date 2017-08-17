@@ -1,0 +1,42 @@
+
+LOCAL = $(PWD)
+
+sdl2 = SDL2.framework
+jansson = $(LOCAL)/lib/libjansson.dylib
+libsndfile = $(LOCAL)/lib/libsndfile.dylib
+libsamplerate = $(LOCAL)/lib/libsamplerate.dylib
+
+
+all: $(sdl2) $(jansson) $(libsndfile) $(libsamplerate)
+
+$(sdl2):
+	wget https://www.libsdl.org/release/SDL2-2.0.5.dmg
+	hdiutil attach SDL2-2.0.5.dmg
+	cp -R /Volumes/SDL2/SDL2.framework .
+
+$(jansson):
+	wget http://www.digip.org/jansson/releases/jansson-2.10.tar.gz
+	tar xf jansson-2.10.tar.gz
+	cd jansson-2.10 && \
+		./configure --prefix=$(LOCAL) && \
+		make && \
+		make install
+
+$(libsndfile):
+	wget http://www.mega-nerd.com/libsndfile/files/libsndfile-1.0.28.tar.gz
+	tar xf libsndfile-1.0.28.tar.gz
+	cd libsndfile-1.0.28 && \
+		./configure --prefix=$(LOCAL) && \
+		make && \
+		make install
+
+$(libsamplerate):
+	wget http://www.mega-nerd.com/SRC/libsamplerate-0.1.9.tar.gz
+	tar xf libsamplerate-0.1.9.tar.gz
+	cd libsamplerate-0.1.9 && \
+		./configure --prefix=$(LOCAL) && \
+		make && \
+		make install
+
+clean:
+	rm -rfv *.framework *.dmg *.tar.gz *.tar.gz.* jansson-2.10
