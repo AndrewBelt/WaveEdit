@@ -143,6 +143,12 @@ static void menuSaveWaves() {
 		currentBank.saveWaves(dirname);
 }
 
+static void menuQuit() {
+	SDL_Event event;
+	event.type = SDL_QUIT;
+	SDL_PushEvent(&event);
+}
+
 
 void renderMenuBar() {
 	// HACK
@@ -183,6 +189,8 @@ void renderMenuBar() {
 				menuSaveWaves();
 			if (ImGui::MenuItem("Import Audio...", NULL, false, true))
 				showImportPopup = true;
+			if (ImGui::MenuItem("Quit", ImGui::GetIO().OSXBehaviors ? "Cmd+Q" : "Ctrl+Q", false, true))
+				menuQuit();
 
 			ImGui::EndMenu();
 		}
@@ -982,6 +990,8 @@ void uiRender() {
 			menuSaveBank();
 		if (ImGui::IsKeyPressed(SDLK_s) && io.KeyShift && !io.KeyAlt)
 			menuSaveBankAs();
+		if (ImGui::IsKeyPressed(SDLK_q) && !io.KeyShift && !io.KeyAlt)
+			menuQuit();
 		if (ImGui::IsKeyPressed(SDLK_z) && !io.KeyShift && !io.KeyAlt)
 			historyUndo();
 		if (ImGui::IsKeyPressed(SDLK_z) && io.KeyShift && !io.KeyAlt)
@@ -993,4 +1003,12 @@ void uiRender() {
 		menuOnlineHelp();
 	if (io.InputCharacters[0] == SDLK_SPACE)
 		playEnabled = !playEnabled;
+	if (io.InputCharacters[0] == SDLK_1)
+		currentPage = EDITOR_PAGE;
+	if (io.InputCharacters[0] == SDLK_2)
+		currentPage = EFFECT_PAGE;
+	if (io.InputCharacters[0] == SDLK_3)
+		currentPage = GRID_PAGE;
+	if (io.InputCharacters[0] == SDLK_4)
+		currentPage = DB_PAGE;
 }
