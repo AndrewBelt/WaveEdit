@@ -162,7 +162,12 @@ struct Wave {
 	void randomizeEffects();
 	void saveWAV(const char *filename);
 	void loadWAV(const char *filename);
+	/** Writes to a global state */
+	void clipboardCopy();
+	void clipboardPaste();
 };
+
+extern bool clipboardActive;
 
 
 ////////////////////

@@ -149,6 +149,21 @@ static void menuQuit() {
 	SDL_PushEvent(&event);
 }
 
+static void menuCopy() {
+	currentBank.waves[selectedWave].clipboardCopy();
+}
+
+static void menuCut() {
+	currentBank.waves[selectedWave].clipboardCopy();
+	currentBank.waves[selectedWave].clear();
+	historyPush();
+}
+
+static void menuPaste() {
+	currentBank.waves[selectedWave].clipboardPaste();
+	historyPush();
+}
+
 
 void renderMenuBar() {
 	// HACK
@@ -200,6 +215,12 @@ void renderMenuBar() {
 				historyUndo();
 			if (ImGui::MenuItem("Redo", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+Z" : "Ctrl+Shift+Z", false))
 				historyRedo();
+			if (ImGui::MenuItem("Copy", ImGui::GetIO().OSXBehaviors ? "Cmd+C" : "Ctrl+C", false))
+				menuCopy();
+			if (ImGui::MenuItem("Cut", ImGui::GetIO().OSXBehaviors ? "Cmd+X" : "Ctrl+X", false))
+				menuCut();
+			if (ImGui::MenuItem("Paste", ImGui::GetIO().OSXBehaviors ? "Cmd+V" : "Ctrl+V", false, clipboardActive))
+				menuPaste();
 			ImGui::EndMenu();
 		}
 		// Audio Output
@@ -996,6 +1017,12 @@ void uiRender() {
 			historyUndo();
 		if (ImGui::IsKeyPressed(SDLK_z) && io.KeyShift && !io.KeyAlt)
 			historyRedo();
+		if (ImGui::IsKeyPressed(SDLK_c) && !io.KeyShift && !io.KeyAlt)
+			menuCopy();
+		if (ImGui::IsKeyPressed(SDLK_x) && !io.KeyShift && !io.KeyAlt)
+			menuCut();
+		if (ImGui::IsKeyPressed(SDLK_v) && !io.KeyShift && !io.KeyAlt)
+			menuPaste();
 	}
 	// I have NO idea why the scancode is needed here but the keycodes are needed for the letters.
 	// It looks like SDLZ_F1 is not defined correctly or something.

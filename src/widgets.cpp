@@ -353,25 +353,21 @@ bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, f
 	// Context menu
 	if (selectedId) {
 		int id = *selectedId;
-		static bool clipboardActive = false;
-		static Wave clipboardWave;
 
 		if (ImGui::BeginPopup("Grid Context Menu")) {
 			char menuName[128];
 			snprintf(menuName, sizeof(menuName), "(Wave %d)", id);
 			ImGui::MenuItem(menuName, NULL, false, false);
+			if (ImGui::MenuItem("Copy")) {
+				bank->waves[id].clipboardCopy();
+			}
 			if (ImGui::MenuItem("Cut")) {
-				clipboardWave = bank->waves[id];
-				clipboardActive = true;
+				bank->waves[id].clipboardCopy();
 				bank->waves[id].clear();
 				edited = true;
 			}
-			if (ImGui::MenuItem("Copy")) {
-				clipboardWave = bank->waves[id];
-				clipboardActive = true;
-			}
 			if (ImGui::MenuItem("Paste", NULL, false, clipboardActive)) {
-				bank->waves[id] = clipboardWave;
+				bank->waves[id].clipboardPaste();
 				edited = true;
 			}
 			if (ImGui::MenuItem("Clear")) {

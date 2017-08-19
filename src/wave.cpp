@@ -3,6 +3,10 @@
 #include <sndfile.h>
 
 
+static Wave clipboardWave = {};
+bool clipboardActive = false;
+
+
 const char *effectNames[EFFECTS_LEN] {
 	"Pre-Gain",
 	"Temporal Shift",
@@ -22,7 +26,6 @@ const char *effectNames[EFFECTS_LEN] {
 void Wave::clear() {
 	memset(this, 0, sizeof(Wave));
 }
-
 
 void Wave::updatePost() {
 	float out[WAVE_LEN];
@@ -203,7 +206,6 @@ void Wave::updatePost() {
 	}
 }
 
-
 void Wave::commitSamples() {
 	// Convert wave to spectrum
 	RFFT(samples, spectrum, WAVE_LEN);
@@ -213,7 +215,6 @@ void Wave::commitSamples() {
 	}
 	updatePost();
 }
-
 
 void Wave::commitHarmonics() {
 	// Rescale spectrum by the new norm
@@ -249,7 +250,6 @@ void Wave::commitHarmonics() {
 	updatePost();
 }
 
-
 void Wave::clearEffects() {
 	memset(effects, 0, sizeof(float) * EFFECTS_LEN);
 	cycle = false;
@@ -257,12 +257,10 @@ void Wave::clearEffects() {
 	updatePost();
 }
 
-
 void Wave::bakeEffects() {
 	memcpy(samples, postSamples, sizeof(float)*WAVE_LEN);
 	clearEffects();
 }
-
 
 void Wave::randomizeEffects() {
 	// Customize each of these to your liking
@@ -279,7 +277,6 @@ void Wave::randomizeEffects() {
 	updatePost();
 }
 
-
 void Wave::saveWAV(const char *filename) {
 	SF_INFO info;
 	info.samplerate = 44100;
@@ -294,7 +291,6 @@ void Wave::saveWAV(const char *filename) {
 	sf_close(sf);
 }
 
-
 void Wave::loadWAV(const char *filename) {
 	clear();
 
@@ -307,4 +303,13 @@ void Wave::loadWAV(const char *filename) {
 	commitSamples();
 
 	sf_close(sf);
+}
+
+void Wave::clipboardCopy() {
+	memcpy(&clipboardWave, this, sizeof(*this));
+	clipboardActive = true;
+}
+
+void Wave::clipboardPaste() {
+	memcpy(this, &clipboardWave, sizeof(*this));
 }
