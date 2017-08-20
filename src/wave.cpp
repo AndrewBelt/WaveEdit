@@ -196,6 +196,7 @@ void Wave::updatePost() {
 	}
 
 	// TODO Fix possible race condition with audio thread here
+	// Or not, because the race condition would only just replace samples as they are being read, which just gives a click sound.
 	memcpy(postSamples, out, sizeof(float)*WAVE_LEN);
 
 	// Convert wave to spectrum
@@ -263,17 +264,10 @@ void Wave::bakeEffects() {
 }
 
 void Wave::randomizeEffects() {
-	// Customize each of these to your liking
-	effects[PRE_GAIN]        = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effects[HARMONIC_SHIFT]  = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effects[COMB]            = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effects[RING]            = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effects[CHEBYSHEV]       = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effects[SAMPLE_AND_HOLD] = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effects[QUANTIZATION]    = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effects[SLEW]            = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effects[LOWPASS]         = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
-	effects[HIGHPASS]        = powf(clampf(randf() * 2 - 1, 0.0, 1.0), 2);
+	for (int i = 0; i < EFFECTS_LEN; i++) {
+		if (randf() > 0.75)
+			effects[i] = powf(randf(), 2);
+	}
 	updatePost();
 }
 
