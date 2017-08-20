@@ -252,6 +252,7 @@ extern bool morphSnap;
 extern float morphX;
 extern float morphY;
 extern float morphZ;
+extern float morphZSpeed;
 extern int playIndex;
 extern const char *audioDeviceName;
 

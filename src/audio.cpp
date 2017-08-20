@@ -12,6 +12,7 @@ bool morphSnap = false;
 float morphX = 0.0;
 float morphY = 0.0;
 float morphZ = 0.0;
+float morphZSpeed = 0.0;
 int playIndex = 0;
 static float morphXSmooth = morphX;
 static float morphYSmooth = morphY;
@@ -41,9 +42,9 @@ void audioCallback(void *userdata, Uint8 *stream, int len) {
 			float in[inLen];
 			for (int i = 0; i < inLen; i++) {
 				if (morphSnap) {
-					morphXSmooth = morphX = roundf(morphX);
-					morphYSmooth = morphY = roundf(morphY);
-					morphZSmooth = morphZ = roundf(morphZ);
+					morphXSmooth = roundf(morphX);
+					morphYSmooth = roundf(morphY);
+					morphZSmooth = roundf(morphZ);
 				}
 				else {
 					const float lambdaMorph = fminf(0.1 / playFrequency, 0.5);
@@ -54,6 +55,7 @@ void audioCallback(void *userdata, Uint8 *stream, int len) {
 
 				int index = (playIndex + i) % WAVE_LEN;
 				if (playModeXY) {
+					// Morph XY
 					int xi = morphXSmooth;
 					float xf = morphXSmooth - xi;
 					int yi = morphYSmooth;
@@ -70,6 +72,7 @@ void audioCallback(void *userdata, Uint8 *stream, int len) {
 					in[i] = crossf(v0, v1, yf);
 				}
 				else {
+					// Morph Z
 					int zi = morphZSmooth;
 					float zf = morphZSmooth - zi;
 					in[i] = crossf(
@@ -93,6 +96,17 @@ void audioCallback(void *userdata, Uint8 *stream, int len) {
 
 			playIndex = (playIndex + srcData.input_frames_used) % WAVE_LEN;
 			outPos += srcData.output_frames_gen;
+
+			// Modulate Z
+			if (!playModeXY && morphZSpeed > 0.f) {
+				float deltaZ = morphZSpeed / audioSpec.freq * srcData.output_frames_gen;
+				deltaZ = clampf(deltaZ, 0.f, 1.f);
+				morphZ += (BANK_LEN-1) * deltaZ;
+				if (morphZ >= (BANK_LEN-1)) {
+					morphZ = fmodf(morphZ, (BANK_LEN-1));
+					morphZSmooth = morphZ;
+				}
+			}
 		}
 	}
 	else {

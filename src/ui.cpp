@@ -30,7 +30,7 @@ static ImTextureID logoTextureLight;
 static ImTextureID logoTextureDark;
 static ImTextureID logoTexture;
 static int selectedWave = 0;
-static char lastFilename[1024] = "\0";
+static char lastFilename[1024] = "";
 static int styleId = 0;
 
 
@@ -103,7 +103,7 @@ static void selectWave(int waveId) {
 
 
 static void refreshMorphSnap() {
-	if (morphSnap) {
+	if (morphSnap && morphZSpeed <= 0.f) {
 		morphX = roundf(morphX);
 		morphY = roundf(morphY);
 		morphZ = roundf(morphZ);
@@ -123,7 +123,11 @@ static void menuNewBank() {
 /** `dir` must be at least size PATH_MAX */
 static void getLastDir(char *dir) {
 	if (lastFilename[0] == '\0') {
+#ifdef ARCH_MAC
+		snprintf(dir, PATH_MAX, "~");
+#else
 		snprintf(dir, PATH_MAX, ".");
+#endif
 	}
 	else {
 		char filename[PATH_MAX];
@@ -165,6 +169,10 @@ static void menuSaveWaves() {
 	const char *dirname = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN | NOC_FILE_DIALOG_DIR, NULL, NULL, NULL);
 	if (dirname)
 		currentBank.saveWaves(dirname);
+}
+
+static void menuImport() {
+	showImportPopup = true;
 }
 
 static void menuQuit() {
@@ -226,9 +234,9 @@ void renderMenuBar() {
 				menuSaveBankAs();
 			if (ImGui::MenuItem("Save Waves To Folder...", NULL, false, true))
 				menuSaveWaves();
-			if (ImGui::MenuItem("Import Audio...", NULL, false, true))
-				showImportPopup = true;
-			if (ImGui::MenuItem("Quit", ImGui::GetIO().OSXBehaviors ? "Cmd+Q" : "Ctrl+Q", false, true))
+			if (ImGui::MenuItem("Import Audio...", ImGui::GetIO().OSXBehaviors ? "Cmd+I" : "Ctrl+I"))
+				menuImport();
+			if (ImGui::MenuItem("Quit", ImGui::GetIO().OSXBehaviors ? "Cmd+Q" : "Ctrl+Q"))
 				menuQuit();
 
 			ImGui::EndMenu();
@@ -310,7 +318,11 @@ void renderPreview() {
 	else {
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-1.0);
+		float width = ImGui::CalcItemWidth() / 2.0 - ImGui::GetStyle().FramePadding.y;
+		ImGui::PushItemWidth(width);
 		ImGui::SliderFloat("##Morph Z", &morphZ, 0.0, BANK_LEN - 1, "Morph Z: %.3f");
+		ImGui::SameLine();
+		ImGui::SliderFloat("##Morph Z Speed", &morphZSpeed, 0.f, 10.f, "Morph Z Speed: %.3f Hz", 3.f);
 	}
 
 	refreshMorphSnap();
@@ -528,6 +540,13 @@ void effectPage() {
 			}
 		}
 		ImGui::SameLine();
+		if (ImGui::Button("Bake")) {
+			for (int i = 0; i < BANK_LEN; i++) {
+				currentBank.waves[i].bakeEffects();
+				historyPush();
+			}
+		}
+		ImGui::SameLine();
 		if (ImGui::Button("Randomize")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].randomizeEffects();
@@ -535,16 +554,9 @@ void effectPage() {
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Clear")) {
+		if (ImGui::Button("Reset")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].clearEffects();
-				historyPush();
-			}
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Apply")) {
-			for (int i = 0; i < BANK_LEN; i++) {
-				currentBank.waves[i].bakeEffects();
 				historyPush();
 			}
 		}
@@ -591,8 +603,10 @@ void importPopup() {
 	static int audioLen;
 	static Bank menuNewBank;
 
-	const int audioLengthMin = 32;
-	const int audioLengthMax = 44100 * 20;
+	const int audioLenMin = 32;
+	const int audioLenMax = 44100 * 20;
+
+	static char importError[1024] = "";
 
 	// Open popup and reset state
 	if (showImportPopup) {
@@ -606,10 +620,22 @@ void importPopup() {
 			right = 1.0;
 			mode = CLEAR_IMPORT;
 			audio = loadAudio(filename, &audioLen);
-			if (audioLengthMin <= audioLen && audioLen <= audioLengthMax)
-				ImGui::OpenPopup("Import");
-			else
+			if (!audio) {
 				ImGui::OpenPopup("Import Error");
+				snprintf(importError, sizeof(importError), "Could not load audio file");
+				printf("%s\n", importError);
+			}
+			else if (audioLen < audioLenMin) {
+				ImGui::OpenPopup("Import Error");
+				snprintf(importError, sizeof(importError), "Audio file contains %d samples, needs at least %d", audioLen, audioLenMin);
+			}
+			else if (audioLen > audioLenMax) {
+				ImGui::OpenPopup("Import Error");
+				snprintf(importError, sizeof(importError), "Audio file contains %d samples, needs at most %d", audioLen, audioLenMax);
+			}
+			else {
+				ImGui::OpenPopup("Import");
+			}
 		}
 	}
 	ImGui::SetNextWindowContentWidth(800.0);
@@ -673,7 +699,7 @@ void importPopup() {
 	}
 
 	if (ImGui::BeginPopupModal("Import Error", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
-		ImGui::Text("Could not import audio, or file is too long or short");
+		ImGui::Text("%s", importError);
 		if (ImGui::Button("OK")) {
 			ImGui::CloseCurrentPopup();
 		}
@@ -1033,6 +1059,8 @@ void uiRender() {
 			menuSaveBank();
 		if (ImGui::IsKeyPressed(SDLK_s) && io.KeyShift && !io.KeyAlt)
 			menuSaveBankAs();
+		if (ImGui::IsKeyPressed(SDLK_i) && !io.KeyShift && !io.KeyAlt)
+			menuImport();
 		if (ImGui::IsKeyPressed(SDLK_q) && !io.KeyShift && !io.KeyAlt)
 			menuQuit();
 		if (ImGui::IsKeyPressed(SDLK_z) && !io.KeyShift && !io.KeyAlt)

@@ -374,17 +374,17 @@ bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, f
 				bank->waves[id].clear();
 				edited = true;
 			}
-			if (ImGui::MenuItem("Save Wave...")) {
-				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", NULL, NULL);
-				if (filename && selectedId) {
-					bank->waves[id].saveWAV(filename);
-				}
-			}
-			if (ImGui::MenuItem("Load Wave...")) {
+			if (ImGui::MenuItem("Open Wave...")) {
 				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
 				if (filename && selectedId) {
 					bank->waves[id].loadWAV(filename);
 					edited = true;
+				}
+			}
+			if (ImGui::MenuItem("Save Wave As...")) {
+				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", NULL, NULL);
+				if (filename && selectedId) {
+					bank->waves[id].saveWAV(filename);
 				}
 			}
 			ImGui::MenuItem("##spacer2", NULL, false, false);
