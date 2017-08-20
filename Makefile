@@ -18,42 +18,18 @@ SOURCES = \
 	$(wildcard src/*.cpp)
 
 
-all: WaveEdit
-
-run: WaveEdit
-	./WaveEdit
-
-debug: WaveEdit
-ifeq ($(ARCH),mac)
-	lldb ./WaveEdit
-else
-	gdb -ex 'run' ./WaveEdit
-endif
-
-
 # OS-specific
-MACHINE = $(shell gcc -dumpmachine)
-ifneq (,$(findstring linux,$(MACHINE)))
+include Makefile-arch.inc
+ifeq ($(ARCH),lin)
 	# Linux
-	ARCH = lin
-	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0) \
-		$(shell pkg-config --cflags sdl2) \
-		$(shell pkg-config --cflags samplerate) \
-		$(shell pkg-config --cflags sndfile) \
-		$(shell pkg-config --cflags libcurl) \
-		$(shell pkg-config --cflags jansson)
+	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0)
 	LDFLAGS += -static-libstdc++ -static-libgcc \
 		-lGL -lpthread \
-		-Llib/local/lib -lcurl \
-		$(shell pkg-config --libs sdl2) \
-		$(shell pkg-config --libs samplerate) \
-		$(shell pkg-config --libs sndfile) \
-		$(shell pkg-config --libs jansson) \
+		-Lext/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
 		-lgtk-x11-2.0 -lgobject-2.0
-	SOURCES += src/noc_file_dialog_gtk.c
-else ifneq (,$(findstring apple,$(MACHINE)))
+	SOURCES += src/noc/noc_file_dialog_gtk.c
+else ifeq ($(ARCH),mac)
 	# Mac
-	ARCH = mac
 	FLAGS += -DARCH_MAC \
 		-isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk \
 		-mmacosx-version-min=10.7
@@ -63,24 +39,31 @@ else ifneq (,$(findstring apple,$(MACHINE)))
 		-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
 		-lcurl \
 		-L./ext/lib -lsdl2 -lsamplerate -lsndfile -ljansson
-	SOURCES += src/noc_file_dialog_osx.m
-else ifneq (,$(findstring mingw,$(MACHINE)))
+	SOURCES += src/noc/noc_file_dialog_osx.m
+else ifeq ($(ARCH),win)
 	# Windows
-	ARCH = win
-	FLAGS += -DARCH_WIN -D_USE_MATH_DEFINES
+	FLAGS += -DARCH_WIN
 	LDFLAGS += \
-		-Llib/local/lib -lcurl \
-		$(shell pkg-config --libs sdl2) \
-		$(shell pkg-config --libs samplerate) \
-		$(shell pkg-config --libs sndfile) \
-		$(shell pkg-config --libs jansson) \
+		-Lext/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
 		-lopengl32 -mwindows
-	SOURCES += src/noc_file_dialog_win.c
+	SOURCES += src/noc/noc_file_dialog_win.c
 	OBJECTS += info.o
 info.o: info.rc
 	windres $^ $@
+endif
+
+
+.DEFAULT_GOAL := build
+build: WaveEdit
+
+run: WaveEdit
+	./WaveEdit
+
+debug: WaveEdit
+ifeq ($(ARCH),mac)
+	lldb ./WaveEdit
 else
-	$(error Could not determine machine type. Try hacking around in the Makefile)
+	gdb -ex 'run' ./WaveEdit
 endif
 
 
@@ -104,15 +87,11 @@ dist: WaveEdit
 ifeq ($(ARCH),lin)
 	cp -R logo*.png fonts catalog dist/WaveEdit
 	cp WaveEdit WaveEdit.sh dist/WaveEdit
-	cp /usr/lib/libSDL2-2.0.so.0 dist/WaveEdit
-	cp /usr/lib/libsamplerate.so.0 dist/WaveEdit
-	cp /usr/lib/libsndfile.so.1 dist/WaveEdit
-	cp /usr/lib/libjansson.so.4 dist/WaveEdit
-	cp /usr/lib/libFLAC.so.8 dist/WaveEdit
-	cp /usr/lib/libogg.so.0 dist/WaveEdit
-	cp /usr/lib/libvorbis.so.0 dist/WaveEdit
-	cp /usr/lib/libvorbisenc.so.2 dist/WaveEdit
-	cp lib/local/lib/libcurl.so.4 dist/WaveEdit
+	cp ext/lib/libSDL2-2.0.so.0 dist/WaveEdit
+	cp ext/lib/libsamplerate.so.0 dist/WaveEdit
+	cp ext/lib/libsndfile.so.1 dist/WaveEdit
+	cp ext/lib/libjansson.so.4 dist/WaveEdit
+	cp ext/lib/libcurl.so.4 dist/WaveEdit
 else ifeq ($(ARCH),mac)
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/Resources
@@ -121,13 +100,13 @@ else ifeq ($(ARCH),mac)
 	cp -R logo*.png logo.icns fonts catalog dist/WaveEdit/WaveEdit.app/Contents/Resources
 	# Remap dylibs in executable
 	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp $(PWD)/ext/lib/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	cp ext/lib/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	install_name_tool -change $(PWD)/ext/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp $(PWD)/ext/lib/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	cp ext/lib/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	install_name_tool -change $(PWD)/ext/lib/libsamplerate.0.dylib @executable_path/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp $(PWD)/ext/lib/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	cp ext/lib/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	install_name_tool -change $(PWD)/ext/lib/libsndfile.1.dylib @executable_path/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp $(PWD)/ext/lib/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	cp ext/lib/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	install_name_tool -change $(PWD)/ext/lib/libjansson.4.dylib @executable_path/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 else ifeq ($(ARCH),win)

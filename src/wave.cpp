@@ -311,5 +311,7 @@ void Wave::clipboardCopy() {
 }
 
 void Wave::clipboardPaste() {
-	memcpy(this, &clipboardWave, sizeof(*this));
+	if (clipboardActive) {
+		memcpy(this, &clipboardWave, sizeof(*this));
+	}
 }

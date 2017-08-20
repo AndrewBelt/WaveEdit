@@ -1,5 +1,9 @@
 #include "WaveEdit.hpp"
 
+#include <unistd.h>
+#include <linux/limits.h>
+#include <libgen.h>
+
 #include <SDL.h>
 #include <SDL_opengl.h>
 
@@ -86,7 +90,7 @@ static void getImageSize(ImTextureID id, int *width, int *height) {
 }
 
 
-void selectWave(int waveId) {
+static void selectWave(int waveId) {
 	selectedWave = waveId;
 	morphX = (float)(selectedWave % BANK_GRID_WIDTH);
 	morphY = (float)(selectedWave / BANK_GRID_WIDTH);
@@ -94,8 +98,7 @@ void selectWave(int waveId) {
 }
 
 
-
-void refreshMorphSnap() {
+static void refreshMorphSnap() {
 	if (morphSnap) {
 		morphX = roundf(morphX);
 		morphY = roundf(morphY);
@@ -113,8 +116,23 @@ static void menuNewBank() {
 	historyPush();
 }
 
+/** `dir` must be at least size PATH_MAX */
+static void getLastDir(char *dir) {
+	if (lastFilename[0] == '\0') {
+		snprintf(dir, PATH_MAX, ".");
+	}
+	else {
+		char filename[PATH_MAX];
+		strncpy(filename, lastFilename, sizeof(filename));
+		const char *dirP = dirname(filename);
+		strncpy(dir, dirP, PATH_MAX);
+	}
+}
+
 static void menuOpenBank() {
-	const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
+	char dir[PATH_MAX];
+	getLastDir(dir);
+	const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", dir, NULL);
 	if (filename) {
 		currentBank.loadWAV(filename);
 		snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
@@ -123,7 +141,9 @@ static void menuOpenBank() {
 }
 
 static void menuSaveBankAs() {
-	const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", NULL, NULL);
+	char dir[PATH_MAX];
+	getLastDir(dir);
+	const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", dir, NULL);
 	if (filename) {
 		currentBank.saveWAV(filename);
 		snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
@@ -962,8 +982,6 @@ static void refreshStyle() {
 
 
 void uiInit() {
-	// ImGui::GetIO().OSXBehaviors;
-
 	ImGui::GetIO().IniFilename = NULL;
 
 	// Load fonts
