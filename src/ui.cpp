@@ -1,7 +1,11 @@
 #include "WaveEdit.hpp"
 
-#include <unistd.h>
-#include <linux/limits.h>
+#ifdef ARCH_LIN
+	#include <linux/limits.h>
+#endif
+#ifdef ARCH_MAC
+	#include <sys/syslimits.h>
+#endif
 #include <libgen.h>
 
 #include <SDL.h>

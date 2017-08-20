@@ -37,8 +37,7 @@ else ifeq ($(ARCH),mac)
 	LDFLAGS += -mmacosx-version-min=10.7 \
 		-stdlib=libc++ -lpthread \
 		-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
-		-lcurl \
-		-L./ext/lib -lsdl2 -lsamplerate -lsndfile -ljansson
+		-Lext/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl
 	SOURCES += src/noc/noc_file_dialog_osx.m
 else ifeq ($(ARCH),win)
 	# Windows
@@ -108,6 +107,8 @@ else ifeq ($(ARCH),mac)
 	install_name_tool -change $(PWD)/ext/lib/libsndfile.1.dylib @executable_path/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 	cp ext/lib/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	install_name_tool -change $(PWD)/ext/lib/libjansson.4.dylib @executable_path/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	cp ext/lib/libcurl.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/ext/lib/libcurl.4.dylib @executable_path/libcurl.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 else ifeq ($(ARCH),win)
 	cp -R logo*.png fonts catalog dist/WaveEdit

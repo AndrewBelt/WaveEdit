@@ -4,6 +4,9 @@
 
 #include <AppKit/AppKit.h>
 
+
+static char *g_noc_file_dialog_ret = NULL;
+
 const char *noc_file_dialog_open(int flags,
                                  const char *filters,
                                  const char *default_path,
@@ -61,7 +64,7 @@ const char *noc_file_dialog_open(int flags,
 
     free(g_noc_file_dialog_ret);
     g_noc_file_dialog_ret = NULL;
-    if ( [panel runModal] == NSModalResponseOK ) {
+    if ( [panel runModal] == NSOKButton ) {
         url = [panel URL];
         utf8_path = [[url path] UTF8String];
         g_noc_file_dialog_ret = strdup(utf8_path);
