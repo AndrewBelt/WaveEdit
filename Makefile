@@ -43,7 +43,7 @@ else ifeq ($(ARCH),win)
 	# Windows
 	FLAGS += -DARCH_WIN
 	LDFLAGS += \
-		-Lext/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
+		-Lext/lib -lmingw32 -lSDL2main -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
 		-lopengl32 -mwindows
 	SOURCES += src/noc/noc_file_dialog_win.c
 	OBJECTS += info.o
@@ -116,16 +116,11 @@ else ifeq ($(ARCH),win)
 	cp /mingw32/bin/libgcc_s_dw2-1.dll dist/WaveEdit
 	cp /mingw32/bin/libwinpthread-1.dll dist/WaveEdit
 	cp /mingw32/bin/libstdc++-6.dll dist/WaveEdit
-	cp /mingw32/bin/libjansson-4.dll dist/WaveEdit
-	cp /mingw32/bin/libsamplerate-0.dll dist/WaveEdit
-	cp /mingw32/bin/SDL2.dll dist/WaveEdit
-	cp /mingw32/bin/libsndfile-1.dll dist/WaveEdit
-	cp /mingw32/bin/libFLAC-8.dll dist/WaveEdit
-	cp /mingw32/bin/libogg-0.dll dist/WaveEdit
-	cp /mingw32/bin/libspeex-1.dll dist/WaveEdit
-	cp /mingw32/bin/libvorbis-0.dll dist/WaveEdit
-	cp /mingw32/bin/libvorbisenc-2.dll dist/WaveEdit
-	cp lib/local/bin/libcurl-4.dll dist/WaveEdit
+	cp ext/bin/SDL2.dll dist/WaveEdit
+	cp ext/bin/libsamplerate-0.dll dist/WaveEdit
+	cp ext/bin/libsndfile-1.dll dist/WaveEdit
+	cp ext/bin/libjansson-4.dll dist/WaveEdit
+	cp ext/bin/libcurl-4.dll dist/WaveEdit
 endif
 	cd dist && zip -9 -r $(DIST_ZIP) WaveEdit
 

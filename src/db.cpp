@@ -175,7 +175,7 @@ static void validate(ValidateId validateId, std::string uuid) {
 	// Make API request
 	CURL *curl = db_curl_easy_init();
 
-	const char *path;
+	const char *path = "";
 	switch (validateId) {
 		case VALIDATE: path = "/x/validate"; break;
 		case INVALIDATE: path = "/x/invalidate"; break;
