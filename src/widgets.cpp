@@ -235,8 +235,7 @@ bool renderHistogram(const char *name, float height, float *bars, int barsLen, c
 }
 
 
-bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, float *gridX, float *gridY, int *selectedId) {
-	assert(bank);
+void renderBankGrid(const char *name, float height, int gridWidth, float *gridX, float *gridY) {
 	assert(BANK_LEN % gridWidth == 0);
 	int gridHeight = BANK_LEN / gridWidth;
 
@@ -254,7 +253,7 @@ bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, f
 	ImVec2 cellSize = ImVec2((size.x + padding.x) / gridWidth, (size.y + padding.y) / gridHeight);
 	ImGui::ItemSize(box, style.FramePadding.y);
 	if (!ImGui::ItemAdd(box, NULL))
-		return false;
+		return;
 
 	// Wave grid
 	for (int j = 0; j < BANK_LEN; j++) {
@@ -264,7 +263,7 @@ bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, f
 		ImVec2 cellPos = ImVec2(box.Min.x + cellSize.x * x, box.Min.y + cellSize.y * y);
 		ImRect cellBox = ImRect(cellPos, cellPos + cellSize - padding);
 		ImU32 col = ImGui::GetColorU32(ImGuiCol_FrameBg);
-		if (selectedId && *selectedId == j)
+		if (selectedId == j)
 			col = ImGui::GetColorU32(ImGuiCol_WindowBg);
 		ImGui::RenderFrame(cellBox.Min, cellBox.Max, col, true, ImGui::GetStyle().FrameRounding);
 
@@ -272,7 +271,7 @@ bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, f
 		ImGui::PushClipRect(cellBox.Min, cellBox.Max, true);
 		ImVec2 lastPos;
 		for (int i = 0; i < WAVE_LEN; i++) {
-			float value = bank->waves[j].postSamples[i];
+			float value = currentBank.waves[j].postSamples[i];
 			float margin = 3.0;
 			ImVec2 pos = ImVec2(rescalef(i, 0, WAVE_LEN - 1, cellBox.Min.x, cellBox.Max.x), rescalef(value, 1.0, -1.0, cellBox.Min.y + margin, cellBox.Max.y - margin));
 			if (i > 0)
@@ -317,9 +316,7 @@ bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, f
 		ImVec2 cellPos = g.IO.MousePos - cellSize / 2.0;
 		gridPos.x = clampf(rescalef(cellPos.x, box.Min.x, box.Max.x, 0.0, gridWidth), 0, gridWidth - 1);
 		gridPos.y = clampf(rescalef(cellPos.y, box.Min.y, box.Max.y, 0.0, gridHeight), 0, gridHeight - 1);
-		if (selectedId) {
-			*selectedId = (int)roundf(gridPos.y) * gridWidth + (int)roundf(gridPos.x);
-		}
+		selectedId = (int)roundf(gridPos.y) * gridWidth + (int)roundf(gridPos.x);
 
 		if (g.IO.MouseDoubleClicked[0]) {
 			// Round gridPos to integers
@@ -348,65 +345,25 @@ bool renderBankGrid(const char *name, float height, int gridWidth, Bank *bank, f
 		ImGui::OpenPopup("Grid Context Menu");
 	}
 
-	bool edited = false;
-
 	// Context menu
-	if (selectedId) {
-		int id = *selectedId;
-
-		if (ImGui::BeginPopup("Grid Context Menu")) {
-			char menuName[128];
-			snprintf(menuName, sizeof(menuName), "(Wave %d)", id);
-			ImGui::MenuItem(menuName, NULL, false, false);
-			if (ImGui::MenuItem("Copy")) {
-				bank->waves[id].clipboardCopy();
-			}
-			if (ImGui::MenuItem("Cut")) {
-				bank->waves[id].clipboardCopy();
-				bank->waves[id].clear();
-				edited = true;
-			}
-			if (ImGui::MenuItem("Paste", NULL, false, clipboardActive)) {
-				bank->waves[id].clipboardPaste();
-				edited = true;
-			}
-			if (ImGui::MenuItem("Clear")) {
-				bank->waves[id].clear();
-				edited = true;
-			}
-			if (ImGui::MenuItem("Open Wave...")) {
-				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
-				if (filename && selectedId) {
-					bank->waves[id].loadWAV(filename);
-					edited = true;
-				}
-			}
-			if (ImGui::MenuItem("Save Wave As...")) {
-				const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", NULL, NULL);
-				if (filename && selectedId) {
-					bank->waves[id].saveWAV(filename);
-				}
-			}
-			ImGui::MenuItem("##spacer2", NULL, false, false);
-			ImGui::MenuItem("(Bank)", NULL, false, false);
-			if (ImGui::MenuItem("Duplicate To All")) {
-				if (selectedId)
-					bank->duplicateToAll(id);
-				edited = true;
-			}
-			if (ImGui::MenuItem("Shuffle Bank")) {
-				bank->shuffle();
-				edited = true;
-			}
-			if (ImGui::MenuItem("Clear All")) {
-				bank->clear();
-				edited = true;
-			}
-			ImGui::EndPopup();
+	if (ImGui::BeginPopup("Grid Context Menu")) {
+		renderWaveMenu();
+		ImGui::MenuItem("##spacer2", NULL, false, false);
+		ImGui::MenuItem("(Bank)", NULL, false, false);
+		if (ImGui::MenuItem("Duplicate To All")) {
+			currentBank.duplicateToAll(selectedId);
+			historyPush();
 		}
+		if (ImGui::MenuItem("Shuffle Bank")) {
+			currentBank.shuffle();
+			historyPush();
+		}
+		if (ImGui::MenuItem("Clear All")) {
+			currentBank.clear();
+			historyPush();
+		}
+		ImGui::EndPopup();
 	}
-
-	return edited;
 }
 
 

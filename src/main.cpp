@@ -36,6 +36,12 @@ void fixWorkingDirectory() {
 
 #endif
 
+
+#ifdef ARCH_LIN
+__asm__(".symver realpath,realpath@GLIBC_2.2.5");
+#endif
+
+
 int main(int argc, char **argv) {
 	srand(time(NULL));
 

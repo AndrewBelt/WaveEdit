@@ -29,9 +29,9 @@ static bool showImportPopup = false;
 static ImTextureID logoTextureLight;
 static ImTextureID logoTextureDark;
 static ImTextureID logoTexture;
-static int selectedWave = 0;
 static char lastFilename[1024] = "";
 static int styleId = 0;
+int selectedId = 0;
 
 
 static void refreshStyle();
@@ -95,10 +95,10 @@ static void getImageSize(ImTextureID id, int *width, int *height) {
 
 
 static void selectWave(int waveId) {
-	selectedWave = waveId;
-	morphX = (float)(selectedWave % BANK_GRID_WIDTH);
-	morphY = (float)(selectedWave / BANK_GRID_WIDTH);
-	morphZ = (float)selectedWave;
+	selectedId = waveId;
+	morphX = (float)(selectedId % BANK_GRID_WIDTH);
+	morphY = (float)(selectedId / BANK_GRID_WIDTH);
+	morphZ = (float)selectedId;
 }
 
 
@@ -182,22 +182,126 @@ static void menuQuit() {
 }
 
 static void menuCopy() {
-	currentBank.waves[selectedWave].clipboardCopy();
+	currentBank.waves[selectedId].clipboardCopy();
 }
 
 static void menuCut() {
-	currentBank.waves[selectedWave].clipboardCopy();
-	currentBank.waves[selectedWave].clear();
+	currentBank.waves[selectedId].clipboardCopy();
+	currentBank.waves[selectedId].clear();
 	historyPush();
 }
 
 static void menuPaste() {
-	currentBank.waves[selectedWave].clipboardPaste();
+	currentBank.waves[selectedId].clipboardPaste();
 	historyPush();
 }
 
+static void menuRandomize() {
+	currentBank.waves[selectedId].randomizeEffects();
+	historyPush();
+}
 
-void renderMenuBar() {
+static void menuClear() {
+	currentBank.waves[selectedId].clear();
+	historyPush();
+}
+
+static void menuKeyCommands() {
+	ImGuiContext &g = *GImGui;
+	ImGuiIO &io = ImGui::GetIO();
+
+	if (io.OSXBehaviors ? io.KeySuper : io.KeyCtrl) {
+		if (ImGui::IsKeyPressed(SDLK_n) && !io.KeyShift && !io.KeyAlt)
+			menuNewBank();
+		if (ImGui::IsKeyPressed(SDLK_o) && !io.KeyShift && !io.KeyAlt)
+			menuOpenBank();
+		if (ImGui::IsKeyPressed(SDLK_s) && !io.KeyShift && !io.KeyAlt)
+			menuSaveBank();
+		if (ImGui::IsKeyPressed(SDLK_s) && io.KeyShift && !io.KeyAlt)
+			menuSaveBankAs();
+		if (ImGui::IsKeyPressed(SDLK_i) && !io.KeyShift && !io.KeyAlt)
+			menuImport();
+		if (ImGui::IsKeyPressed(SDLK_q) && !io.KeyShift && !io.KeyAlt)
+			menuQuit();
+		if (ImGui::IsKeyPressed(SDLK_z) && !io.KeyShift && !io.KeyAlt)
+			historyUndo();
+		if (ImGui::IsKeyPressed(SDLK_z) && io.KeyShift && !io.KeyAlt)
+			historyRedo();
+		if (ImGui::IsKeyPressed(SDLK_c) && !io.KeyShift && !io.KeyAlt)
+			menuCopy();
+		if (ImGui::IsKeyPressed(SDLK_x) && !io.KeyShift && !io.KeyAlt)
+			menuCut();
+		if (ImGui::IsKeyPressed(SDLK_v) && !io.KeyShift && !io.KeyAlt)
+			menuPaste();
+	}
+	// I have NO idea why the scancode is needed here but the keycodes are needed for the letters.
+	// It looks like SDLZ_F1 is not defined correctly or something.
+	if (ImGui::IsKeyPressed(SDL_SCANCODE_F1))
+		menuOnlineHelp();
+
+	// Only trigger these key commands if no text box is focused
+	if (!g.ActiveId || (g.ActiveId != GImGui->InputTextState.Id)) {
+		if (ImGui::IsKeyPressed(SDLK_r))
+			menuRandomize();
+		if (ImGui::IsKeyPressed(SDLK_DELETE))
+			menuClear();
+		// Pages
+		if (ImGui::IsKeyPressed(SDLK_SPACE))
+			playEnabled = !playEnabled;
+		if (ImGui::IsKeyPressed(SDLK_1))
+			currentPage = EDITOR_PAGE;
+		if (ImGui::IsKeyPressed(SDLK_2))
+			currentPage = EFFECT_PAGE;
+		if (ImGui::IsKeyPressed(SDLK_3))
+			currentPage = GRID_PAGE;
+		if (ImGui::IsKeyPressed(SDLK_4))
+			currentPage = DB_PAGE;
+	}
+}
+
+void renderWaveMenu() {
+	char menuName[128];
+	snprintf(menuName, sizeof(menuName), "(Wave %d)", selectedId);
+	ImGui::MenuItem(menuName, NULL, false, false);
+
+	if (ImGui::MenuItem("Copy", ImGui::GetIO().OSXBehaviors ? "Cmd+C" : "Ctrl+C")) {
+		currentBank.waves[selectedId].clipboardCopy();
+	}
+	if (ImGui::MenuItem("Cut", ImGui::GetIO().OSXBehaviors ? "Cmd+X" : "Ctrl+X")) {
+		currentBank.waves[selectedId].clipboardCopy();
+		currentBank.waves[selectedId].clear();
+		historyPush();
+	}
+	if (ImGui::MenuItem("Paste", ImGui::GetIO().OSXBehaviors ? "Cmd+V" : "Ctrl+V", false, clipboardActive)) {
+		currentBank.waves[selectedId].clipboardPaste();
+		historyPush();
+	}
+	if (ImGui::MenuItem("Clear", "Delete")) {
+		currentBank.waves[selectedId].clear();
+		historyPush();
+	}
+	if (ImGui::MenuItem("Randomize", "R")) {
+		currentBank.waves[selectedId].randomizeEffects();
+		historyPush();
+	}
+	if (ImGui::MenuItem("Open Wave...")) {
+		const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
+		if (filename) {
+			currentBank.waves[selectedId].loadWAV(filename);
+			historyPush();
+		}
+	}
+	if (ImGui::MenuItem("Save Wave As...")) {
+		const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", NULL, NULL);
+		if (filename) {
+			currentBank.waves[selectedId].saveWAV(filename);
+		}
+	}
+}
+
+void renderMenu() {
+	menuKeyCommands();
+
 	// HACK
 	// Display a window on top of the menu with the logo, since I'm too lazy to make my own custom MenuImageItem widget
 	{
@@ -232,7 +336,7 @@ void renderMenuBar() {
 				menuSaveBank();
 			if (ImGui::MenuItem("Save Bank As...", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+S" : "Ctrl+Shift+S"))
 				menuSaveBankAs();
-			if (ImGui::MenuItem("Save Waves To Folder...", NULL, false, true))
+			if (ImGui::MenuItem("Save Waves To Folder...", NULL))
 				menuSaveWaves();
 			if (ImGui::MenuItem("Import Audio...", ImGui::GetIO().OSXBehaviors ? "Cmd+I" : "Ctrl+I"))
 				menuImport();
@@ -243,16 +347,12 @@ void renderMenuBar() {
 		}
 		// Edit
 		if (ImGui::BeginMenu("Edit")) {
-			if (ImGui::MenuItem("Undo", ImGui::GetIO().OSXBehaviors ? "Cmd+Z" : "Ctrl+Z", false))
+			if (ImGui::MenuItem("Undo", ImGui::GetIO().OSXBehaviors ? "Cmd+Z" : "Ctrl+Z"))
 				historyUndo();
-			if (ImGui::MenuItem("Redo", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+Z" : "Ctrl+Shift+Z", false))
+			if (ImGui::MenuItem("Redo", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+Z" : "Ctrl+Shift+Z"))
 				historyRedo();
-			if (ImGui::MenuItem("Copy", ImGui::GetIO().OSXBehaviors ? "Cmd+C" : "Ctrl+C", false))
-				menuCopy();
-			if (ImGui::MenuItem("Cut", ImGui::GetIO().OSXBehaviors ? "Cmd+X" : "Ctrl+X", false))
-				menuCut();
-			if (ImGui::MenuItem("Paste", ImGui::GetIO().OSXBehaviors ? "Cmd+V" : "Ctrl+V", false, clipboardActive))
-				menuPaste();
+			ImGui::MenuItem("##spacer", NULL, false, false);
+			renderWaveMenu();
 			ImGui::EndMenu();
 		}
 		// Audio Output
@@ -347,8 +447,8 @@ void effectSlider(EffectID effect) {
 	snprintf(id, sizeof(id), "##%s", effectNames[effect]);
 	char text[64];
 	snprintf(text, sizeof(text), "%s: %%.3f", effectNames[effect]);
-	if (ImGui::SliderFloat(id, &currentBank.waves[selectedWave].effects[effect], 0.0f, 1.0f, text)) {
-		currentBank.waves[selectedWave].updatePost();
+	if (ImGui::SliderFloat(id, &currentBank.waves[selectedId].effects[effect], 0.0f, 1.0f, text)) {
+		currentBank.waves[selectedId].updatePost();
 		historyPush();
 	}
 }
@@ -359,9 +459,7 @@ void editorPage() {
 	{
 		float dummyZ = 0.0;
 		ImGui::PushItemWidth(-1);
-		if (renderBankGrid("SidebarGrid", BANK_LEN * 35.0, 1, &currentBank, &dummyZ, &morphZ, &selectedWave)) {
-			historyPush();
-		}
+		renderBankGrid("SidebarGrid", BANK_LEN * 35.0, 1, &dummyZ, &morphZ);
 		refreshMorphSnap();
 	}
 	ImGui::EndChild();
@@ -369,7 +467,7 @@ void editorPage() {
 	ImGui::SameLine();
 	ImGui::BeginChild("Editor", ImVec2(0, 0), true);
 	{
-		Wave *wave = &currentBank.waves[selectedWave];
+		Wave *wave = &currentBank.waves[selectedId];
 		float *effects = wave->effects;
 
 		ImGui::PushItemWidth(-1);
@@ -379,7 +477,7 @@ void editorPage() {
 
 		ImGui::SameLine();
 		if (ImGui::Button("Clear")) {
-			currentBank.waves[selectedWave].clear();
+			currentBank.waves[selectedId].clear();
 			historyPush();
 		}
 
@@ -390,8 +488,8 @@ void editorPage() {
 			if (ImGui::BeginPopup(catalogCategory.name.c_str())) {
 				for (const CatalogFile &catalogFile : catalogCategory.files) {
 					if (ImGui::Selectable(catalogFile.name.c_str())) {
-						memcpy(currentBank.waves[selectedWave].samples, catalogFile.samples, sizeof(float) * WAVE_LEN);
-						currentBank.waves[selectedWave].commitSamples();
+						memcpy(currentBank.waves[selectedId].samples, catalogFile.samples, sizeof(float) * WAVE_LEN);
+						currentBank.waves[selectedId].commitSamples();
 						historyPush();
 					}
 				}
@@ -406,12 +504,12 @@ void editorPage() {
 		float waveOversample[WAVE_LEN * oversample];
 		cyclicOversample(wave->postSamples, waveOversample, WAVE_LEN, oversample);
 		if (renderWave("WaveEditor", 200.0, wave->samples, WAVE_LEN, waveOversample, WAVE_LEN * oversample, tool)) {
-			currentBank.waves[selectedWave].commitSamples();
+			currentBank.waves[selectedId].commitSamples();
 			historyPush();
 		}
 
 		if (renderHistogram("HarmonicEditor", 200.0, wave->harmonics, WAVE_LEN / 2, wave->postHarmonics, WAVE_LEN / 2, tool)) {
-			currentBank.waves[selectedWave].commitHarmonics();
+			currentBank.waves[selectedId].commitHarmonics();
 			historyPush();
 		}
 
@@ -420,28 +518,28 @@ void editorPage() {
 			effectSlider((EffectID) i);
 		}
 
-		if (ImGui::Checkbox("Cycle", &currentBank.waves[selectedWave].cycle)) {
-			currentBank.waves[selectedWave].updatePost();
+		if (ImGui::Checkbox("Cycle", &currentBank.waves[selectedId].cycle)) {
+			currentBank.waves[selectedId].updatePost();
 			historyPush();
 		}
 		ImGui::SameLine();
-		if (ImGui::Checkbox("Normalize", &currentBank.waves[selectedWave].normalize)) {
-			currentBank.waves[selectedWave].updatePost();
+		if (ImGui::Checkbox("Normalize", &currentBank.waves[selectedId].normalize)) {
+			currentBank.waves[selectedId].updatePost();
 			historyPush();
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Bake")) {
-			currentBank.waves[selectedWave].bakeEffects();
+			currentBank.waves[selectedId].bakeEffects();
 			historyPush();
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Randomize")) {
-			currentBank.waves[selectedWave].randomizeEffects();
+			currentBank.waves[selectedId].randomizeEffects();
 			historyPush();
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Reset")) {
-			currentBank.waves[selectedWave].clearEffects();
+			currentBank.waves[selectedId].clearEffects();
 			historyPush();
 		}
 		// if (ImGui::Button("Dump to WAV")) saveBank("out.wav");
@@ -569,9 +667,7 @@ void gridPage() {
 	ImGui::BeginChild("Grid Page", ImVec2(0, 0), true);
 	{
 		ImGui::PushItemWidth(-1.0);
-		if (renderBankGrid("WaveGrid", -1.f, BANK_GRID_WIDTH, &currentBank, &morphX, &morphY, &selectedWave)) {
-			historyPush();
-		}
+		renderBankGrid("WaveGrid", -1.f, BANK_GRID_WIDTH, &morphX, &morphY);
 		refreshMorphSnap();
 	}
 	ImGui::EndChild();
@@ -715,7 +811,7 @@ void renderMain() {
 	ImGui::Begin("", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_MenuBar);
 	{
 		// Menu bar
-		renderMenuBar();
+		renderMenu();
 		renderPreview();
 		// Tab bar
 		{
@@ -1047,45 +1143,4 @@ void uiDestroy() {
 
 void uiRender() {
 	renderMain();
-
-	// Key commands
-	ImGuiIO &io = ImGui::GetIO();
-	if (io.OSXBehaviors ? io.KeySuper : io.KeyCtrl) {
-		if (ImGui::IsKeyPressed(SDLK_n) && !io.KeyShift && !io.KeyAlt)
-			menuNewBank();
-		if (ImGui::IsKeyPressed(SDLK_o) && !io.KeyShift && !io.KeyAlt)
-			menuOpenBank();
-		if (ImGui::IsKeyPressed(SDLK_s) && !io.KeyShift && !io.KeyAlt)
-			menuSaveBank();
-		if (ImGui::IsKeyPressed(SDLK_s) && io.KeyShift && !io.KeyAlt)
-			menuSaveBankAs();
-		if (ImGui::IsKeyPressed(SDLK_i) && !io.KeyShift && !io.KeyAlt)
-			menuImport();
-		if (ImGui::IsKeyPressed(SDLK_q) && !io.KeyShift && !io.KeyAlt)
-			menuQuit();
-		if (ImGui::IsKeyPressed(SDLK_z) && !io.KeyShift && !io.KeyAlt)
-			historyUndo();
-		if (ImGui::IsKeyPressed(SDLK_z) && io.KeyShift && !io.KeyAlt)
-			historyRedo();
-		if (ImGui::IsKeyPressed(SDLK_c) && !io.KeyShift && !io.KeyAlt)
-			menuCopy();
-		if (ImGui::IsKeyPressed(SDLK_x) && !io.KeyShift && !io.KeyAlt)
-			menuCut();
-		if (ImGui::IsKeyPressed(SDLK_v) && !io.KeyShift && !io.KeyAlt)
-			menuPaste();
-	}
-	// I have NO idea why the scancode is needed here but the keycodes are needed for the letters.
-	// It looks like SDLZ_F1 is not defined correctly or something.
-	if (ImGui::IsKeyPressed(SDL_SCANCODE_F1))
-		menuOnlineHelp();
-	if (io.InputCharacters[0] == SDLK_SPACE)
-		playEnabled = !playEnabled;
-	if (io.InputCharacters[0] == SDLK_1)
-		currentPage = EDITOR_PAGE;
-	if (io.InputCharacters[0] == SDLK_2)
-		currentPage = EFFECT_PAGE;
-	if (io.InputCharacters[0] == SDLK_3)
-		currentPage = GRID_PAGE;
-	if (io.InputCharacters[0] == SDLK_4)
-		currentPage = DB_PAGE;
 }

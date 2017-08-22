@@ -22,7 +22,7 @@ all: $(sdl2) $(jansson) $(libsndfile) $(libsamplerate) $(libcurl)
 $(sdl2):
 	wget -nc https://www.libsdl.org/release/$@.tar.gz
 	tar xf $@.tar.gz
-	cd $@ && ./configure --prefix="$(LOCAL)"
+	cd $@ && ./configure --prefix="$(LOCAL)" --enable-input-tslib=no
 	$(MAKE) -C $@
 	$(MAKE) -C $@ install
 

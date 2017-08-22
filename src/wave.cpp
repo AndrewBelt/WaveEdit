@@ -265,8 +265,7 @@ void Wave::bakeEffects() {
 
 void Wave::randomizeEffects() {
 	for (int i = 0; i < EFFECTS_LEN; i++) {
-		if (randf() > 0.75)
-			effects[i] = powf(randf(), 2);
+		effects[i] = randf() > 0.5 ? powf(randf(), 2) : 0.0;
 	}
 	updatePost();
 }
