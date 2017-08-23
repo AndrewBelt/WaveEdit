@@ -284,7 +284,7 @@ enum Tool {
 bool renderWave(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool = NO_TOOL);
 bool renderHistogram(const char *name, float height, float *bars, int barsLen, const float *ghost, int ghostLen, enum Tool tool);
 void renderBankGrid(const char *name, float height, int gridWidth, float *gridX, float *gridY);
-void renderWave3D(float height, const float *const *waves, int bankLen, int waveLen);
+void renderWave3D(const char *name, float height, const float *const *waves, int bankLen, int waveLen);
 
 
 ////////////////////

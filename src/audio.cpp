@@ -19,7 +19,62 @@ static float morphYSmooth = morphY;
 static float morphZSmooth = morphZ;
 static SDL_AudioDeviceID audioDevice = 0;
 static SDL_AudioSpec audioSpec;
-static SRC_STATE *audioSrc;
+static SRC_STATE *audioSrc = NULL;
+
+long srcCallback(void *cb_data, float **data) {
+	float gain = powf(10.0, playVolume / 20.0);
+	// Generate next samples
+	const int inLen = 64;
+	static float in[inLen];
+	for (int i = 0; i < inLen; i++) {
+		if (morphSnap) {
+			morphXSmooth = roundf(morphX);
+			morphYSmooth = roundf(morphY);
+			morphZSmooth = roundf(morphZ);
+		}
+		else {
+			const float lambdaMorph = fminf(0.1 / playFrequency, 0.5);
+			morphXSmooth = crossf(morphXSmooth, clampf(morphX, 0.0, BANK_GRID_WIDTH - 1), lambdaMorph);
+			morphYSmooth = crossf(morphYSmooth, clampf(morphY, 0.0, BANK_GRID_HEIGHT - 1), lambdaMorph);
+			morphZSmooth = crossf(morphZSmooth, clampf(morphZ, 0.0, BANK_LEN - 1), lambdaMorph);
+		}
+
+		int index = (playIndex + i) % WAVE_LEN;
+		if (playModeXY) {
+			// Morph XY
+			int xi = morphXSmooth;
+			float xf = morphXSmooth - xi;
+			int yi = morphYSmooth;
+			float yf = morphYSmooth - yi;
+			// 2D linear interpolate
+			float v0 = crossf(
+				currentBank.waves[yi * BANK_GRID_WIDTH + xi].postSamples[index],
+				currentBank.waves[yi * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
+				xf);
+			float v1 = crossf(
+				currentBank.waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + xi].postSamples[index],
+				currentBank.waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
+				xf);
+			in[i] = crossf(v0, v1, yf);
+		}
+		else {
+			// Morph Z
+			int zi = morphZSmooth;
+			float zf = morphZSmooth - zi;
+			in[i] = crossf(
+				currentBank.waves[zi].postSamples[index],
+				currentBank.waves[eucmodi(zi + 1, BANK_LEN)].postSamples[index],
+				zf);
+		}
+		in[i] = clampf(in[i] * gain, -1.0, 1.0);
+	}
+
+	playIndex += inLen;
+	playIndex %= WAVE_LEN;
+
+	*data = in;
+	return inLen;
+}
 
 
 void audioCallback(void *userdata, Uint8 *stream, int len) {
@@ -31,81 +86,18 @@ void audioCallback(void *userdata, Uint8 *stream, int len) {
 		const float lambdaFrequency = 0.5;
 		playFrequency = clampf(playFrequency, 1.0, 10000.0);
 		playFrequencySmooth = powf(playFrequencySmooth, 1.0 - lambdaFrequency) * powf(playFrequency, lambdaFrequency);
-		float gain = powf(10.0, playVolume / 20.0);
 		double ratio = (double)audioSpec.freq / WAVE_LEN / playFrequencySmooth;
 
-		int outPos = 0;
-		while (outPos < outLen) {
-			// Generate next samples
-			// NOTE: We may not need them, because of the weird way libsamplerate requests audio, so don't advance playIndex yet
-			int inLen = 64;
-			float in[inLen];
-			for (int i = 0; i < inLen; i++) {
-				if (morphSnap) {
-					morphXSmooth = roundf(morphX);
-					morphYSmooth = roundf(morphY);
-					morphZSmooth = roundf(morphZ);
-				}
-				else {
-					const float lambdaMorph = fminf(0.1 / playFrequency, 0.5);
-					morphXSmooth = crossf(morphXSmooth, clampf(morphX, 0.0, BANK_GRID_WIDTH - 1), lambdaMorph);
-					morphYSmooth = crossf(morphYSmooth, clampf(morphY, 0.0, BANK_GRID_HEIGHT - 1), lambdaMorph);
-					morphZSmooth = crossf(morphZSmooth, clampf(morphZ, 0.0, BANK_LEN - 1), lambdaMorph);
-				}
+		src_callback_read(audioSrc, ratio, outLen, out);
 
-				int index = (playIndex + i) % WAVE_LEN;
-				if (playModeXY) {
-					// Morph XY
-					int xi = morphXSmooth;
-					float xf = morphXSmooth - xi;
-					int yi = morphYSmooth;
-					float yf = morphYSmooth - yi;
-					// 2D linear interpolate
-					float v0 = crossf(
-						currentBank.waves[yi * BANK_GRID_WIDTH + xi].postSamples[index],
-						currentBank.waves[yi * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
-						xf);
-					float v1 = crossf(
-						currentBank.waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + xi].postSamples[index],
-						currentBank.waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
-						xf);
-					in[i] = crossf(v0, v1, yf);
-				}
-				else {
-					// Morph Z
-					int zi = morphZSmooth;
-					float zf = morphZSmooth - zi;
-					in[i] = crossf(
-						currentBank.waves[zi].postSamples[index],
-						currentBank.waves[eucmodi(zi + 1, BANK_LEN)].postSamples[index],
-						zf);
-				}
-				in[i] = clampf(in[i] * gain, -1.0, 1.0);
-			}
-
-			// Pull output samples
-			SRC_DATA srcData;
-			srcData.data_in = in;
-			srcData.input_frames = inLen;
-			srcData.data_out = &out[outPos];
-			srcData.output_frames = outLen - outPos;
-			srcData.src_ratio = ratio;
-			srcData.end_of_input = false;
-			int err = src_process(audioSrc, &srcData);
-			assert(!err);
-
-			playIndex = (playIndex + srcData.input_frames_used) % WAVE_LEN;
-			outPos += srcData.output_frames_gen;
-
-			// Modulate Z
-			if (!playModeXY && morphZSpeed > 0.f) {
-				float deltaZ = morphZSpeed / audioSpec.freq * srcData.output_frames_gen;
-				deltaZ = clampf(deltaZ, 0.f, 1.f);
-				morphZ += (BANK_LEN-1) * deltaZ;
-				if (morphZ >= (BANK_LEN-1)) {
-					morphZ = fmodf(morphZ, (BANK_LEN-1));
-					morphZSmooth = morphZ;
-				}
+		// Modulate Z
+		if (!playModeXY && morphZSpeed > 0.f) {
+			float deltaZ = morphZSpeed * outLen / audioSpec.freq;
+			deltaZ = clampf(deltaZ, 0.f, 1.f);
+			morphZ += (BANK_LEN-1) * deltaZ;
+			if (morphZ >= (BANK_LEN-1)) {
+				morphZ = fmodf(morphZ, (BANK_LEN-1));
+				morphZSmooth = morphZ;
 			}
 		}
 	}
@@ -151,7 +143,9 @@ void audioOpen(int deviceId) {
 }
 
 void audioInit() {
-	audioSrc = src_new(SRC_SINC_FASTEST, 1, NULL);
+	assert(!audioSrc);
+	int err;
+	audioSrc = src_callback_new(srcCallback, SRC_SINC_FASTEST, 1, &err, NULL);
 	assert(audioSrc);
 	audioOpen(-1);
 }

@@ -41,7 +41,7 @@ static enum {
 	EDITOR_PAGE = 0,
 	EFFECT_PAGE,
 	GRID_PAGE,
-	// WATERFALL_PAGE,
+	WATERFALL_PAGE,
 	DB_PAGE,
 	NUM_PAGES
 } currentPage = EDITOR_PAGE;
@@ -239,23 +239,27 @@ static void menuKeyCommands() {
 	if (ImGui::IsKeyPressed(SDL_SCANCODE_F1))
 		menuOnlineHelp();
 
-	// Only trigger these key commands if no text box is focused
-	if (!g.ActiveId || (g.ActiveId != GImGui->InputTextState.Id)) {
-		if (ImGui::IsKeyPressed(SDLK_r))
-			menuRandomize();
-		if (ImGui::IsKeyPressed(SDLK_DELETE))
-			menuClear();
-		// Pages
-		if (ImGui::IsKeyPressed(SDLK_SPACE))
-			playEnabled = !playEnabled;
-		if (ImGui::IsKeyPressed(SDLK_1))
-			currentPage = EDITOR_PAGE;
-		if (ImGui::IsKeyPressed(SDLK_2))
-			currentPage = EFFECT_PAGE;
-		if (ImGui::IsKeyPressed(SDLK_3))
-			currentPage = GRID_PAGE;
-		if (ImGui::IsKeyPressed(SDLK_4))
-			currentPage = DB_PAGE;
+	if (!io.KeySuper && !io.KeyCtrl && !io.KeyShift && !io.KeyAlt) {
+		// Only trigger these key commands if no text box is focused
+		if (!g.ActiveId || g.ActiveId != GImGui->InputTextState.Id) {
+			if (ImGui::IsKeyPressed(SDLK_r))
+				menuRandomize();
+			if (ImGui::IsKeyPressed(SDLK_DELETE))
+				menuClear();
+			// Pages
+			if (ImGui::IsKeyPressed(SDLK_SPACE))
+				playEnabled = !playEnabled;
+			if (ImGui::IsKeyPressed(SDLK_1))
+				currentPage = EDITOR_PAGE;
+			if (ImGui::IsKeyPressed(SDLK_2))
+				currentPage = EFFECT_PAGE;
+			if (ImGui::IsKeyPressed(SDLK_3))
+				currentPage = GRID_PAGE;
+			if (ImGui::IsKeyPressed(SDLK_4))
+				currentPage = WATERFALL_PAGE;
+			if (ImGui::IsKeyPressed(SDLK_5))
+				currentPage = DB_PAGE;
+		}
 	}
 }
 
@@ -323,7 +327,7 @@ void renderMenu() {
 	// Draw main menu
 	if (ImGui::BeginMenuBar()) {
 		// This will be hidden by the window with the logo
-		if (ImGui::BeginMenu("                        " TOSTRING(VERSION), false)) {
+		if (ImGui::BeginMenu("                        v" TOSTRING(VERSION), false)) {
 			ImGui::EndMenu();
 		}
 		// File
@@ -682,7 +686,7 @@ void waterfallPage() {
 		for (int b = 0; b < BANK_LEN; b++) {
 			waves[b] = currentBank.waves[b].postSamples;
 		}
-		renderWave3D(600, waves, BANK_LEN, WAVE_LEN);
+		renderWave3D("##Wave3D", 600, waves, BANK_LEN, WAVE_LEN);
 	}
 	ImGui::EndChild();
 }
@@ -819,7 +823,7 @@ void renderMain() {
 				"Waveform Editor",
 				"Effect Editor",
 				"Grid XY View",
-				// "3D Z View",
+				"Waterfall View",
 				"WaveEdit Online"
 			};
 			static int hoveredTab = 0;
@@ -831,7 +835,7 @@ void renderMain() {
 		case EDITOR_PAGE: editorPage(); break;
 		case EFFECT_PAGE: effectPage(); break;
 		case GRID_PAGE: playModeXY = true; gridPage(); break;
-		// case WATERFALL_PAGE: waterfallPage(); break;
+		case WATERFALL_PAGE: waterfallPage(); break;
 		case DB_PAGE: dbPage(); break;
 		default: break;
 		}

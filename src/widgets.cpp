@@ -367,16 +367,35 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 }
 
 
-void renderWave3D(float height, const float *const *waves, int bankLen, int waveLen) {
+void renderWave3D(const char *name, float height, const float *const *waves, int bankLen, int waveLen) {
 	ImGuiContext &g = *GImGui;
 	ImGuiWindow *window = ImGui::GetCurrentWindow();
 	const ImGuiStyle &style = g.Style;
+	const ImGuiID id = window->GetID(name);
 
 	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
 	ImRect box = ImRect(window->DC.CursorPos, window->DC.CursorPos + size);
 	ImRect inner = ImRect(box.Min + style.FramePadding, box.Max - style.FramePadding);
 
 	ImGui::PushClipRect(box.Min, box.Max, true);
+
+	// Behavior
+	bool hovered = ImGui::IsHovered(box, id);
+	if (hovered) {
+		ImGui::SetHoveredID(id);
+		if (g.IO.MouseClicked[0]) {
+			ImGui::SetActiveID(id, window);
+			ImGui::FocusWindow(window);
+			g.ActiveIdClickOffset = g.IO.MousePos - box.Min;
+		}
+	}
+
+	// Unhover
+	if (g.ActiveId == id) {
+		if (!g.IO.MouseDown[0]) {
+			ImGui::ClearActiveID();
+		}
+	}
 
 	const float waveHeight = 10.0;
 	ImVec2 waveOffset = ImVec2(5, -5);

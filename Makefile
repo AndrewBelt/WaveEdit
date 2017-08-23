@@ -1,4 +1,4 @@
-VERSION = v0.6.1
+VERSION = 0.6.1
 
 FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=core2 -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
@@ -76,8 +76,6 @@ clean:
 	rm -frv $(OBJECTS) WaveEdit dist
 
 
-DIST_ZIP = WaveEdit_$(VERSION)_$(ARCH).zip
-
 .PHONY: dist
 dist: WaveEdit
 	mkdir -p dist/WaveEdit
@@ -122,7 +120,7 @@ else ifeq ($(ARCH),win)
 	cp ext/bin/libjansson-4.dll dist/WaveEdit
 	cp ext/bin/libcurl-4.dll dist/WaveEdit
 endif
-	cd dist && zip -9 -r $(DIST_ZIP) WaveEdit
+	cd dist && zip -9 -r WaveEdit-$(VERSION)-$(ARCH).zip WaveEdit
 
 
 # SUFFIXES:
