@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>WaveEdit Manual</title>
+    <style>@font-face {
+  font-family: "ag";
+  font-style: normal;
+  font-weight: normal;
+  src: url("ag.woff") format("woff");
+}
+@font-face {
+  font-family: "pnr";
+  font-style: normal;
+  font-weight: normal;
+  src: url("pnr.woff") format("woff");
+}
+body {
+  color: #222;
+  font-family: 'pnr';
+  font-size: 16pt;
+}
+h1,
+h2,
+h3 {
+  text-transform: uppercase;
+  font-family: 'ag';
+}
+h1 {
+  font-size: 60pt;
+}
+h2 {
+  font-size: 30pt;
+}
+h3 {
+  font-size: 20pt;
+}
+.page-break {
+  page-break-after: always;
+}
+table {
+  text-align: left;
+  border-collapse: collapse;
+}
+table,
+td,
+th {
+  border: 1px solid #222;
+}
+td,
+th {
+  padding: 0.5em;
+}
+
+    </style>
+  </head>
+  <body><h1>Synthesis Technology WaveEdit</h1>
+<p><em>WaveEdit</em> is a cross-platform (Mac/Windows/Linux) wavetable and bank editor designed for the Synthesis Technology <a href="http://synthtech.com/eurorack/E370/">E370 Quad Morphing VCO</a> and <a href="http://synthtech.com/eurorack/E352/">E352 Cloud Terrarium VCO</a> Eurorack synthesizer modules.</p>
+<p><em>WaveEdit</em> is available for download at <a href="http://synthtech.com/waveedit">http://synthtech.com/waveedit</a>.</p>
+<p><img src="main.png" alt=""></p>
+<h2>Overview</h2>
+<p>In <em>WaveEdit</em> and the Synthesis Technology E370 and E352 modules, you can load a bank of wavetables and morph/interpolate between them as they cycle at a particular frequency.</p>
+<ul>
+<li>A bank contains 64 wavetables</li>
+<li>A wavetable contains 256 samples</li>
+</ul>
+<p>In Z mode, all 64 wavetables are positioned on a line, and the Z parameter smoothly interpolates wavetables near its value.
+In XY mode, the wavetables are positioned on an 8x8 grid and interpolated in 2D.</p>
+<p>There are several methods for creating a bank of wavetables.
+You may combine any of these methods in unique ways to create your own banks.</p>
+<ol>
+<li>Draw samples on the waveform display using the drawing tools</li>
+<li>Draw harmonics on the spectrum display</li>
+<li>Load preset waveforms from the wave catalog</li>
+<li>Apply effects to wavetables</li>
+<li>Duplicate the wavetable to all slots in the bank</li>
+<li>Draw an effect across many wavetables in the bank</li>
+<li>Randomize one or all of the wavetables' effects</li>
+</ol>
+<p>Once you are satisfied with your bank using the bank visualization pages or audio preview, you can save it as a WAV file and load it by the E370 and E352 VCOs with a microSD card.
+You can share your favorite banks by submitting them to the WaveEdit Online database.</p>
+
+    <p class="page-break"></p><h2>Key Commands</h2>
+<table>
+<thead>
+<tr>
+<th>Key Command</th>
+<th>Mac</th>
+<th>Windows / Linux</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>New Bank</td>
+<td>Cmd+N</td>
+<td>Ctrl+N</td>
+</tr>
+<tr>
+<td>Open Bank</td>
+<td>Cmd+O</td>
+<td>Ctrl+O</td>
+</tr>
+<tr>
+<td>Save Bank</td>
+<td>Cmd+S</td>
+<td>Ctrl+S</td>
+</tr>
+<tr>
+<td>Save Bank As</td>
+<td>Cmd+Shift+S</td>
+<td>Ctrl+Shift+S</td>
+</tr>
+<tr>
+<td>Import Audio</td>
+<td>Cmd+I</td>
+<td>Ctrl+I</td>
+</tr>
+<tr>
+<td>Quit</td>
+<td>Cmd+Q</td>
+<td>Ctrl+Q</td>
+</tr>
+<tr>
+<td>Undo</td>
+<td>Cmd+Z</td>
+<td>Ctrl+Z</td>
+</tr>
+<tr>
+<td>Redo</td>
+<td>Cmd+Shift+Z</td>
+<td>Ctrl+Shift+Z</td>
+</tr>
+<tr>
+<td>Copy Wave</td>
+<td>Cmd+C</td>
+<td>Ctrl+C</td>
+</tr>
+<tr>
+<td>Cut Wave</td>
+<td>Cmd+X</td>
+<td>Ctrl+X</td>
+</tr>
+<tr>
+<td>Paste Wave</td>
+<td>Cmd+V</td>
+<td>Ctrl+V</td>
+</tr>
+<tr>
+<td>Clear Wave</td>
+<td>Delete/Backspace</td>
+<td>Delete</td>
+</tr>
+<tr>
+<td>Randomize Effects</td>
+<td>R</td>
+<td>R</td>
+</tr>
+<tr>
+<td>Toggle Preview Audio</td>
+<td>Space</td>
+<td>Space</td>
+</tr>
+<tr>
+<td>Waveform Editor</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Effect Editor</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Grid XY View</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Waterfall View</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr>
+<td>WaveEdit Online</td>
+<td>5</td>
+<td>5</td>
+</tr>
+</tbody>
+</table>
+
+  </body>
+</html>

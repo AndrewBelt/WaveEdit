@@ -1,0 +1,101 @@
+doctype
+html
+	head
+		meta(charset='utf-8')
+		title WaveEdit Manual
+		style
+			:stylus
+				@font-face {
+				  font-family: "ag";
+				  font-style: normal;
+				  font-weight: normal;
+				  src: url("ag.woff") format("woff");
+				}
+				@font-face {
+					font-family: "pnr";
+					font-style: normal;
+					font-weight: normal;
+					src: url("pnr.woff") format("woff");
+				}
+				body
+					color #222
+					font-family 'pnr'
+					font-size 16pt
+				h1, h2, h3
+					text-transform uppercase
+					font-family 'ag'
+				h1
+					font-size 60pt
+				h2
+					font-size 30pt
+				h3
+					font-size 20pt
+				.page-break
+					page-break-after always
+				table
+					text-align: left
+					border-collapse collapse
+				table, td, th
+					border 1px solid #222
+				td, th
+					padding 0.5em
+
+	body
+		:markdown-it
+			# Synthesis Technology WaveEdit
+
+			*WaveEdit* is a cross-platform (Mac/Windows/Linux) wavetable and bank editor designed for the Synthesis Technology [E370 Quad Morphing VCO](http://synthtech.com/eurorack/E370/) and [E352 Cloud Terrarium VCO](http://synthtech.com/eurorack/E352/) Eurorack synthesizer modules.
+
+			*WaveEdit* is available for download at [http://synthtech.com/waveedit](http://synthtech.com/waveedit).
+
+			![](main.png)
+
+			## Overview
+
+			In *WaveEdit* and the Synthesis Technology E370 and E352 modules, you can load a bank of wavetables and morph/interpolate between them as they cycle at a particular frequency.
+
+			- A bank contains 64 wavetables
+			- A wavetable contains 256 samples
+
+			In Z mode, all 64 wavetables are positioned on a line, and the Z parameter smoothly interpolates wavetables near its value.
+			In XY mode, the wavetables are positioned on an 8x8 grid and interpolated in 2D.
+
+			There are several methods for creating a bank of wavetables.
+			You may combine any of these methods in unique ways to create your own banks.
+
+			1. Draw samples on the waveform display using the drawing tools
+			2. Draw harmonics on the spectrum display
+			3. Load preset waveforms from the wave catalog
+			4. Apply effects to wavetables
+			5. Duplicate the wavetable to all slots in the bank
+			6. Draw an effect across many wavetables in the bank
+			7. Randomize one or all of the wavetables' effects
+
+			Once you are satisfied with your bank using the bank visualization pages or audio preview, you can save it as a WAV file and load it by the E370 and E352 VCOs with a microSD card.
+			You can share your favorite banks by submitting them to the WaveEdit Online database.
+
+		p.page-break
+		:markdown-it
+			## Key Commands
+
+			| Key Command | Mac | Windows / Linux |
+			|---|---|---|
+			| New Bank | Cmd+N | Ctrl+N |
+			| Open Bank | Cmd+O | Ctrl+O |
+			| Save Bank | Cmd+S | Ctrl+S |
+			| Save Bank As | Cmd+Shift+S | Ctrl+Shift+S |
+			| Import Audio | Cmd+I | Ctrl+I |
+			| Quit | Cmd+Q | Ctrl+Q |
+			| Undo | Cmd+Z | Ctrl+Z |
+			| Redo | Cmd+Shift+Z | Ctrl+Shift+Z |
+			| Copy Wave | Cmd+C | Ctrl+C |
+			| Cut Wave | Cmd+X | Ctrl+X |
+			| Paste Wave | Cmd+V | Ctrl+V |
+			| Clear Wave | Delete/Backspace | Delete |
+			| Randomize Effects | R | R |
+			| Toggle Preview Audio | Space | Space |
+			| Waveform Editor | 1 | 1 |
+			| Effect Editor | 2 | 2 |
+			| Grid XY View | 3 | 3 |
+			| Waterfall View | 4 | 4 |
+			| WaveEdit Online | 5 | 5 |
