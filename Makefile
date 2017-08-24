@@ -81,6 +81,7 @@ dist: WaveEdit
 	mkdir -p dist/WaveEdit
 	cp -R banks dist/WaveEdit
 	cp LICENSE* dist/WaveEdit
+	cp doc/manual.pdf dist/WaveEdit
 ifeq ($(ARCH),lin)
 	cp -R logo*.png fonts catalog dist/WaveEdit
 	cp WaveEdit WaveEdit.sh dist/WaveEdit

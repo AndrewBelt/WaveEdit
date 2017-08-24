@@ -284,7 +284,7 @@ void renderWaveMenu() {
 		currentBank.waves[selectedId].clear();
 		historyPush();
 	}
-	if (ImGui::MenuItem("Randomize", "R")) {
+	if (ImGui::MenuItem("Randomize Effects", "R")) {
 		currentBank.waves[selectedId].randomizeEffects();
 		historyPush();
 	}
