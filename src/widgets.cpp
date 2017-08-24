@@ -416,7 +416,7 @@ void renderWaterfall(const char *name, float height, float *angle, float activeZ
 	for (int b = 0; b < BANK_LEN; b++) {
 		ImVec2 points[WAVE_LEN];
 		for (int i = 0; i < WAVE_LEN; i++) {
-			float value = currentBank.waves[b].samples[i];
+			float value = currentBank.waves[b].postSamples[i];
 			ImVec2 a = ImVec2(rescalef(i, 0, WAVE_LEN-1, -1.0, 1.0), rescalef(b, 0, BANK_LEN-1, -1.0, 1.0));
 			a = ImRotate(a, cosf(theta), sinf(theta)) / M_SQRT2;
 			ImVec2 point = ImVec2(rescalef(a.x, -1.0, 1.0, box.Min.x, box.Max.x), rescalef(a.y, 1.0, -1.0, box.Min.y, box.Max.y));
