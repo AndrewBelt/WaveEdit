@@ -407,18 +407,18 @@ void renderWaterfall(const char *name, float height, float *angle, float activeZ
 	// Mouse rotation
 	if (g.ActiveId == id) {
 		*angle += g.IO.MouseDelta.x / 100.0;
+		*angle = fmodf(*angle, 2*M_PI);
 	}
 
 	const float waveHeight = 10.0;
 	ImVec2 waveOffset = ImVec2(5, -5);
-	float theta = *angle;
 
 	for (int b = 0; b < BANK_LEN; b++) {
 		ImVec2 points[WAVE_LEN];
 		for (int i = 0; i < WAVE_LEN; i++) {
 			float value = currentBank.waves[b].postSamples[i];
 			ImVec2 a = ImVec2(rescalef(i, 0, WAVE_LEN-1, -1.0, 1.0), rescalef(b, 0, BANK_LEN-1, -1.0, 1.0));
-			a = ImRotate(a, cosf(theta), sinf(theta)) / M_SQRT2;
+			a = ImRotate(a, cosf(*angle), sinf(*angle)) / M_SQRT2;
 			ImVec2 point = ImVec2(rescalef(a.x, -1.0, 1.0, box.Min.x, box.Max.x), rescalef(a.y, 1.0, -1.0, box.Min.y, box.Max.y));
 			point.y += -20.0 * value;
 			points[i] = point;

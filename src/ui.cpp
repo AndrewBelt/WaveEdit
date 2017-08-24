@@ -682,7 +682,7 @@ void waterfallPage() {
 	ImGui::BeginChild("3D View", ImVec2(0, 0), true);
 	{
 		ImGui::PushItemWidth(-1.0);
-		static float angle = 0.0;
+		static float angle = -M_PI / 4;
 		renderWaterfall("##waterfall", -1.0, &angle, morphZ);
 	}
 	ImGui::EndChild();
