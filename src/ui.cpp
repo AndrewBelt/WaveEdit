@@ -327,7 +327,7 @@ void renderMenu() {
 	// Draw main menu
 	if (ImGui::BeginMenuBar()) {
 		// This will be hidden by the window with the logo
-		if (ImGui::BeginMenu("                        v" TOSTRING(VERSION), false)) {
+		if (ImGui::BeginMenu("                        " TOSTRING(VERSION), false)) {
 			ImGui::EndMenu();
 		}
 		// File
@@ -682,11 +682,8 @@ void waterfallPage() {
 	ImGui::BeginChild("3D View", ImVec2(0, 0), true);
 	{
 		ImGui::PushItemWidth(-1.0);
-		float *waves[BANK_LEN];
-		for (int b = 0; b < BANK_LEN; b++) {
-			waves[b] = currentBank.waves[b].postSamples;
-		}
-		renderWave3D("##Wave3D", 600, waves, BANK_LEN, WAVE_LEN);
+		static float angle = 0.0;
+		renderWaterfall("##waterfall", -1.0, &angle, morphZ);
 	}
 	ImGui::EndChild();
 }

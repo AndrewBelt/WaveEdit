@@ -1,4 +1,4 @@
-VERSION = 0.6.1
+VERSION = 1.0beta
 
 FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=core2 -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \

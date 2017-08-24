@@ -246,9 +246,9 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 	ImVec2 padding = style.FramePadding;
 	ImVec2 windowPadding = style.WindowPadding;
 
-	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
 	if (height < 0.f)
-		size.y = ImGui::GetWindowSize().y - windowPadding.y - padding.y;
+		height = ImGui::GetWindowSize().y - windowPadding.y - padding.y;
+	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
 	ImRect box = ImRect(window->DC.CursorPos, window->DC.CursorPos + size);
 	ImVec2 cellSize = ImVec2((size.x + padding.x) / gridWidth, (size.y + padding.y) / gridHeight);
 	ImGui::ItemSize(box, style.FramePadding.y);
@@ -367,12 +367,19 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 }
 
 
-void renderWave3D(const char *name, float height, const float *const *waves, int bankLen, int waveLen) {
+void renderWaterfall(const char *name, float height, float *angle, float activeZ) {
+	assert(angle);
+
 	ImGuiContext &g = *GImGui;
 	ImGuiWindow *window = ImGui::GetCurrentWindow();
 	const ImGuiStyle &style = g.Style;
 	const ImGuiID id = window->GetID(name);
 
+	ImVec2 padding = style.FramePadding;
+	ImVec2 windowPadding = style.WindowPadding;
+
+	if (height < 0.f)
+		height = ImGui::GetWindowSize().y - windowPadding.y - padding.y;
 	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
 	ImRect box = ImRect(window->DC.CursorPos, window->DC.CursorPos + size);
 	ImRect inner = ImRect(box.Min + style.FramePadding, box.Max - style.FramePadding);
@@ -397,17 +404,27 @@ void renderWave3D(const char *name, float height, const float *const *waves, int
 		}
 	}
 
+	// Mouse rotation
+	if (g.ActiveId == id) {
+		*angle += g.IO.MouseDelta.x / 100.0;
+	}
+
 	const float waveHeight = 10.0;
 	ImVec2 waveOffset = ImVec2(5, -5);
+	float theta = *angle;
 
-	for (int b = 0; b < bankLen; b++) {
-		ImVec2 *points = new ImVec2[waveLen];
-		for (int i = 0; i < waveLen; i++) {
-			float value = waves[b][i];
-			points[i] = ImVec2(rescalef(i, 0, waveLen - 1, inner.Min.x, inner.Max.x), rescalef(value, -1.0, 1.0, inner.Max.y - 200 + waveHeight, inner.Max.y - 200 - waveHeight) + 0.5 * i) + waveOffset * b;
+	for (int b = 0; b < BANK_LEN; b++) {
+		ImVec2 points[WAVE_LEN];
+		for (int i = 0; i < WAVE_LEN; i++) {
+			float value = currentBank.waves[b].samples[i];
+			ImVec2 a = ImVec2(rescalef(i, 0, WAVE_LEN-1, -1.0, 1.0), rescalef(b, 0, BANK_LEN-1, -1.0, 1.0));
+			a = ImRotate(a, cosf(theta), sinf(theta)) / M_SQRT2;
+			ImVec2 point = ImVec2(rescalef(a.x, -1.0, 1.0, box.Min.x, box.Max.x), rescalef(a.y, 1.0, -1.0, box.Min.y, box.Max.y));
+			point.y += -20.0 * value;
+			points[i] = point;
 		}
-		window->DrawList->AddPolyline(points, waveLen, ImGui::GetColorU32(ImGuiCol_PlotHistogram), false, 0.1, true);
-		delete[] points;
+		float thickness = 1.0 + 4.0 * fmaxf(1.0 - fabsf(b - activeZ), 0.0);
+		window->DrawList->AddPolyline(points, WAVE_LEN, ImGui::GetColorU32(ImGuiCol_PlotHistogram), false, thickness, true);
 	}
 
 	ImGui::PopClipRect();

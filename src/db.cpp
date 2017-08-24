@@ -314,9 +314,6 @@ static void uploadPopup() {
 			if (uploadable) {
 				std::thread uploadThread(upload, std::string(title), std::string(attribution), std::string(notes));
 				uploadThread.detach();
-				strcpy(title, "");
-				strcpy(attribution, "");
-				strcpy(notes, "");
 				ImGui::CloseCurrentPopup();
 			}
 		}
