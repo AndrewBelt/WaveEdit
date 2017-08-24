@@ -244,7 +244,7 @@ static void menuKeyCommands() {
 		if (!g.ActiveId || g.ActiveId != GImGui->InputTextState.Id) {
 			if (ImGui::IsKeyPressed(SDLK_r))
 				menuRandomize();
-			if (ImGui::IsKeyPressed(SDLK_DELETE))
+			if (ImGui::IsKeyPressed(io.OSXBehaviors ? SDLK_BACKSPACE : SDLK_DELETE))
 				menuClear();
 			// Pages
 			if (ImGui::IsKeyPressed(SDLK_SPACE))
@@ -340,7 +340,7 @@ void renderMenu() {
 				menuSaveBank();
 			if (ImGui::MenuItem("Save Bank As...", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+S" : "Ctrl+Shift+S"))
 				menuSaveBankAs();
-			if (ImGui::MenuItem("Save Waves To Folder...", NULL))
+			if (ImGui::MenuItem("Save Waves to Folder...", NULL))
 				menuSaveWaves();
 			if (ImGui::MenuItem("Import Audio...", ImGui::GetIO().OSXBehaviors ? "Cmd+I" : "Ctrl+I"))
 				menuImport();
