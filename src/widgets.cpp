@@ -367,9 +367,7 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 }
 
 
-void renderWaterfall(const char *name, float height, float *angle, float activeZ) {
-	assert(angle);
-
+void renderWaterfall(const char *name, float height, float amplitude, float angle, float *activeZ) {
 	ImGuiContext &g = *GImGui;
 	ImGuiWindow *window = ImGui::GetCurrentWindow();
 	const ImGuiStyle &style = g.Style;
@@ -390,7 +388,7 @@ void renderWaterfall(const char *name, float height, float *angle, float activeZ
 	bool hovered = ImGui::IsHovered(box, id);
 	if (hovered) {
 		ImGui::SetHoveredID(id);
-		if (g.IO.MouseClicked[0]) {
+		if (g.IO.MouseClicked[0] || g.IO.MouseClicked[1]) {
 			ImGui::SetActiveID(id, window);
 			ImGui::FocusWindow(window);
 			g.ActiveIdClickOffset = g.IO.MousePos - box.Min;
@@ -404,13 +402,16 @@ void renderWaterfall(const char *name, float height, float *angle, float activeZ
 		}
 	}
 
-	// Mouse rotation
-	if (g.ActiveId == id) {
-		*angle += g.IO.MouseDelta.x / 100.0;
-		*angle = fmodf(*angle, 2*M_PI);
+	float theta = -M_PI / 4.0 + 2.0 * M_PI * angle;
+
+	// ActiveZ select
+	if (g.ActiveId == id && g.IO.MouseDown[0]) {
+		ImVec2 point = g.IO.MousePos;
+		ImVec2 a = ImVec2(rescalef(point.x, box.Min.x, box.Max.x, -1.0, 1.0), rescalef(point.y, box.Min.y, box.Max.y, 1.0, -1.0));
+		a = ImRotate(a * M_SQRT2, cosf(-theta), sinf(-theta));
+		*activeZ = clampf(rescalef(a.y, -1.0, 1.0, 0, BANK_LEN-1), 0.0, BANK_LEN-1);
 	}
 
-	const float waveHeight = 10.0;
 	ImVec2 waveOffset = ImVec2(5, -5);
 
 	for (int b = 0; b < BANK_LEN; b++) {
@@ -418,12 +419,12 @@ void renderWaterfall(const char *name, float height, float *angle, float activeZ
 		for (int i = 0; i < WAVE_LEN; i++) {
 			float value = currentBank.waves[b].postSamples[i];
 			ImVec2 a = ImVec2(rescalef(i, 0, WAVE_LEN-1, -1.0, 1.0), rescalef(b, 0, BANK_LEN-1, -1.0, 1.0));
-			a = ImRotate(a, cosf(*angle), sinf(*angle)) / M_SQRT2;
+			a = ImRotate(a, cosf(theta), sinf(theta)) / M_SQRT2;
+			a.y += -amplitude * 0.3 * value;
 			ImVec2 point = ImVec2(rescalef(a.x, -1.0, 1.0, box.Min.x, box.Max.x), rescalef(a.y, 1.0, -1.0, box.Min.y, box.Max.y));
-			point.y += -20.0 * value;
 			points[i] = point;
 		}
-		float thickness = 1.0 + 4.0 * fmaxf(1.0 - fabsf(b - activeZ), 0.0);
+		float thickness = 1.0 + 4.0 * fmaxf(1.0 - fabsf(b - *activeZ), 0.0);
 		window->DrawList->AddPolyline(points, WAVE_LEN, ImGui::GetColorU32(ImGuiCol_PlotHistogram), false, thickness, true);
 	}
 
