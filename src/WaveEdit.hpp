@@ -104,11 +104,14 @@ void f32_to_i16(const float *in, int16_t *out, int length);
 // util.cpp
 ////////////////////
 
+/** Opens a URL, also happens to with PDFs */
 void openBrowser(const char *url);
 /** Caller must free(). Returns NULL if unsuccessful */
 float *loadAudio(const char *filename, int *length);
 /** Converts a printf format to a std::string */
 std::string stringf(const char *format, ...);
+/** Truncates a string if needed, inserting ellipses (...), to be no greater than `maxLen` characters */
+void ellipsize(char *str, int maxLen);
 unsigned char *base64_encode(const unsigned char *src, size_t len, size_t *out_len);
 unsigned char *base64_decode(const unsigned char *src, size_t len, size_t *out_len);
 
@@ -192,6 +195,7 @@ struct Bank {
 	void clear();
 	void swap(int i, int j);
 	void shuffle();
+	/** `in` must be length BANK_LEN * WAVE_LEN */
 	void setSamples(const float *in);
 	void getPostSamples(float *out);
 	void duplicateToAll(int waveId);
@@ -256,6 +260,7 @@ extern float morphZ;
 extern float morphZSpeed;
 extern int playIndex;
 extern const char *audioDeviceName;
+extern Bank *playingBank;
 
 int audioGetDeviceCount();
 const char *audioGetDeviceName(int deviceId);

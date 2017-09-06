@@ -157,9 +157,9 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 	bool edited = editorBehavior(id, box, inner, points, pointsLen, 0.0, pointsLen - 1, 1.0, -1.0, tool);
 
 	ImGui::PushClipRect(box.Min, box.Max, true);
-	ImVec2 lastPos;
 	// Draw lines
 	if (lines) {
+		ImVec2 lastPos;
 		for (int i = 0; i < linesLen; i++) {
 			ImVec2 pos = ImVec2(rescalef(i, 0, linesLen, inner.Min.x, inner.Max.x), rescalef(lines[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
 			if (i > 0)

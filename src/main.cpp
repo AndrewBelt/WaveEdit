@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
 	SDL_GL_SetSwapInterval(1);
 
 	// Set up Imgui binding
-	ImGui_ImplSdl_Init(window);
+	ImGui_ImplSdlGL2_Init(window);
 
 	// Initialize modules
 	uiInit();
@@ -91,16 +91,17 @@ int main(int argc, char **argv) {
 		// Scan events
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
-			ImGui_ImplSdl_ProcessEvent(&event);
+			ImGui_ImplSdlGL2_ProcessEvent(&event);
 			if (event.type == SDL_QUIT) {
 				running = false;
 			}
 		}
 
-		// Build render buffer
-		ImGui_ImplSdl_NewFrame(window);
+		ImGui_ImplSdlGL2_NewFrame(window);
+		// Only render if window is visible
 		Uint32 flags = SDL_GetWindowFlags(window);
 		if ((flags & SDL_WINDOW_SHOWN) && !(flags & SDL_WINDOW_MINIMIZED)) {
+			// Build render buffer
 			uiRender();
 		}
 
@@ -117,7 +118,7 @@ int main(int argc, char **argv) {
 
 	// Cleanup
 	uiDestroy();
-	ImGui_ImplSdl_Shutdown();
+	ImGui_ImplSdlGL2_Shutdown();
 	SDL_GL_DeleteContext(glContext);
 	SDL_DestroyWindow(window);
 	SDL_Quit();

@@ -14,6 +14,8 @@ float morphY = 0.0;
 float morphZ = 0.0;
 float morphZSpeed = 0.0;
 int playIndex = 0;
+Bank *playingBank;
+
 static float morphXSmooth = morphX;
 static float morphYSmooth = morphY;
 static float morphZSmooth = morphZ;
@@ -48,12 +50,12 @@ long srcCallback(void *cb_data, float **data) {
 			float yf = morphYSmooth - yi;
 			// 2D linear interpolate
 			float v0 = crossf(
-				currentBank.waves[yi * BANK_GRID_WIDTH + xi].postSamples[index],
-				currentBank.waves[yi * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
+				playingBank->waves[yi * BANK_GRID_WIDTH + xi].postSamples[index],
+				playingBank->waves[yi * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
 				xf);
 			float v1 = crossf(
-				currentBank.waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + xi].postSamples[index],
-				currentBank.waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
+				playingBank->waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + xi].postSamples[index],
+				playingBank->waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
 				xf);
 			in[i] = crossf(v0, v1, yf);
 		}
@@ -62,8 +64,8 @@ long srcCallback(void *cb_data, float **data) {
 			int zi = morphZSmooth;
 			float zf = morphZSmooth - zi;
 			in[i] = crossf(
-				currentBank.waves[zi].postSamples[index],
-				currentBank.waves[eucmodi(zi + 1, BANK_LEN)].postSamples[index],
+				playingBank->waves[zi].postSamples[index],
+				playingBank->waves[eucmodi(zi + 1, BANK_LEN)].postSamples[index],
 				zf);
 		}
 		in[i] = clampf(in[i] * gain, -1.0, 1.0);

@@ -108,8 +108,12 @@ static void refreshMorphSnap() {
 	}
 }
 
-static void menuOnlineHelp() {
-	openBrowser("http://synthtech.com/WaveEdit");
+static void menuManual() {
+	openBrowser("manual.pdf");
+}
+
+static void menuWebsite() {
+	openBrowser("http://synthtech.com/waveedit");
 }
 
 static void menuNewBank() {
@@ -235,7 +239,7 @@ static void menuKeyCommands() {
 	// I have NO idea why the scancode is needed here but the keycodes are needed for the letters.
 	// It looks like SDLZ_F1 is not defined correctly or something.
 	if (ImGui::IsKeyPressed(SDL_SCANCODE_F1))
-		menuOnlineHelp();
+		menuManual();
 
 	if (!io.KeySuper && !io.KeyCtrl && !io.KeyShift && !io.KeyAlt) {
 		// Only trigger these key commands if no text box is focused
@@ -396,9 +400,11 @@ void renderMenu() {
 		}
 		// Help
 		if (ImGui::BeginMenu("Help")) {
-			if (ImGui::MenuItem("Online Help", "F1", false))
-				menuOnlineHelp();
-			// if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
+			if (ImGui::MenuItem("Manual PDF", "F1", false))
+				menuManual();
+			if (ImGui::MenuItem("Webpage", "", false))
+				menuWebsite();
+			if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();
@@ -413,7 +419,7 @@ void renderPreview() {
 	ImGui::SliderFloat("##playVolume", &playVolume, -60.0f, 0.0f, "Volume: %.2f dB");
 	ImGui::PushItemWidth(-1.0);
 	ImGui::SameLine();
-	ImGui::SliderFloat("##playFrequency", &playFrequency, 1.0f, 10000.0f, "Frequency: %.2f Hz", 3.0f);
+	ImGui::SliderFloat("##playFrequency", &playFrequency, 1.0f, 10000.0f, "Frequency: %.2f Hz", 0.0f);
 
 	ImGui::Checkbox("Morph Snap", &morphSnap);
 	if (playModeXY) {
@@ -674,6 +680,7 @@ void effectPage() {
 
 
 void gridPage() {
+	playModeXY = true;
 	ImGui::BeginChild("Grid Page", ImVec2(0, 0), true);
 	{
 		ImGui::PushItemWidth(-1.0);
@@ -689,8 +696,8 @@ void waterfallPage() {
 	{
 		ImGui::PushItemWidth(-1.0);
 		static float amplitude = 0.25;
-		ImGui::SliderFloat("##amplitude", &amplitude, 0.01, 1.0, "Scale: %.3f", 2.0);
-		static float angle = 0.0;
+		ImGui::SliderFloat("##amplitude", &amplitude, 0.01, 1.0, "Scale: %.3f", 0.0);
+		static float angle = 1.0;
 		ImGui::SliderFloat("##angle", &angle, 0.0, 1.0, "Angle: %.3f");
 
 		renderWaterfall("##waterfall", -1.0, amplitude, angle, &morphZ);
@@ -721,12 +728,15 @@ void renderMain() {
 			static int hoveredTab = 0;
 			ImGui::TabLabels(NUM_PAGES, tabLabels, (int*)&currentPage, NULL, false, &hoveredTab);
 		}
+
 		// Page
+		// Reset some audio variables. These might be changed within the pages.
 		playModeXY = false;
+		playingBank = &currentBank;
 		switch (currentPage) {
 		case EDITOR_PAGE: editorPage(); break;
 		case EFFECT_PAGE: effectPage(); break;
-		case GRID_PAGE: playModeXY = true; gridPage(); break;
+		case GRID_PAGE: gridPage(); break;
 		case WATERFALL_PAGE: waterfallPage(); break;
 		case IMPORT_PAGE: importPage(); break;
 		case DB_PAGE: dbPage(); break;

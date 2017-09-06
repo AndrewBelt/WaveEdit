@@ -77,6 +77,19 @@ std::string stringf(const char *format, ...) {
 }
 
 
+void ellipsize(char *str, int maxLen) {
+	if (maxLen < 3)
+		return;
+	int len = strlen(str);
+	if (len > maxLen) {
+		str[maxLen - 3] = '.';
+		str[maxLen - 2] = '.';
+		str[maxLen - 1] = '.';
+		str[maxLen] = '\0';
+	}
+}
+
+
 
 
 /* This base64 implementation:
