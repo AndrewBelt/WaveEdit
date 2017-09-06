@@ -2,19 +2,19 @@ VERSION = 1.0beta
 
 FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=core2 -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
-	-I. -Iimgui -Inoc -Iext/include -Iext/include/SDL2
+	-I. -Iext -Iext/imgui -Idep/include -Idep/include/SDL2
 CFLAGS =
 CXXFLAGS = -std=c++11
 LDFLAGS =
 
 
 SOURCES = \
-	pffft/pffft.c \
-	lodepng/lodepng.cpp \
-	imgui/imgui.cpp \
-	imgui/imgui_draw.cpp \
-	imgui/imgui_demo.cpp \
-	imgui/examples/sdl_opengl2_example/imgui_impl_sdl.cpp \
+	ext/pffft/pffft.c \
+	ext/lodepng/lodepng.cpp \
+	ext/imgui/imgui.cpp \
+	ext/imgui/imgui_draw.cpp \
+	ext/imgui/imgui_demo.cpp \
+	ext/imgui/examples/sdl_opengl2_example/imgui_impl_sdl.cpp \
 	$(wildcard src/*.cpp)
 
 
@@ -25,9 +25,9 @@ ifeq ($(ARCH),lin)
 	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0)
 	LDFLAGS += -static-libstdc++ -static-libgcc \
 		-lGL -lpthread \
-		-Lext/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
+		-Ldep/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
 		-lgtk-x11-2.0 -lgobject-2.0
-	SOURCES += src/noc/noc_file_dialog_gtk.c
+	SOURCES += ext/osdialog/osdialog_gtk2.c
 else ifeq ($(ARCH),mac)
 	# Mac
 	FLAGS += -DARCH_MAC \
@@ -37,15 +37,15 @@ else ifeq ($(ARCH),mac)
 	LDFLAGS += -mmacosx-version-min=10.7 \
 		-stdlib=libc++ -lpthread \
 		-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
-		-Lext/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl
-	SOURCES += src/noc/noc_file_dialog_osx.m
+		-Ldep/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl
+	SOURCES += ext/osdialog/osdialog_mac.m
 else ifeq ($(ARCH),win)
 	# Windows
 	FLAGS += -DARCH_WIN
 	LDFLAGS += \
-		-Lext/lib -lmingw32 -lSDL2main -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
+		-Ldep/lib -lmingw32 -lSDL2main -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
 		-lopengl32 -mwindows
-	SOURCES += src/noc/noc_file_dialog_win.c
+	SOURCES += ext/osdialog/osdialog_win.c
 	OBJECTS += info.o
 info.o: info.rc
 	windres $^ $@

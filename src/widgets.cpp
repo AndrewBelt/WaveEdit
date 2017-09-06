@@ -4,10 +4,6 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 
-extern "C" {
-#include "noc/noc_file_dialog.h"
-}
-
 
 void waveLine(float *points, int pointsLen, float startIndex, float endIndex, float startValue, float endValue) {
 	// Switch indices if out of order
@@ -235,6 +231,28 @@ bool renderHistogram(const char *name, float height, float *bars, int barsLen, c
 }
 
 
+static void waveMenu() {
+	if (ImGui::BeginPopup("Wave Menu")) {
+		renderWaveMenu();
+		ImGui::MenuItem("##spacer", NULL, false, false);
+		ImGui::MenuItem("(Bank)", NULL, false, false);
+		if (ImGui::MenuItem("Duplicate To All")) {
+			currentBank.duplicateToAll(selectedId);
+			historyPush();
+		}
+		if (ImGui::MenuItem("Shuffle Bank")) {
+			currentBank.shuffle();
+			historyPush();
+		}
+		if (ImGui::MenuItem("Clear All")) {
+			currentBank.clear();
+			historyPush();
+		}
+		ImGui::EndPopup();
+	}
+}
+
+
 void renderBankGrid(const char *name, float height, int gridWidth, float *gridX, float *gridY) {
 	assert(BANK_LEN % gridWidth == 0);
 	int gridHeight = BANK_LEN / gridWidth;
@@ -342,28 +360,10 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 
 	// Right click context menu
 	if (hovered && g.IO.MouseClicked[1]) {
-		ImGui::OpenPopup("Grid Context Menu");
+		ImGui::OpenPopup("Wave Menu");
 	}
 
-	// Context menu
-	if (ImGui::BeginPopup("Grid Context Menu")) {
-		renderWaveMenu();
-		ImGui::MenuItem("##spacer2", NULL, false, false);
-		ImGui::MenuItem("(Bank)", NULL, false, false);
-		if (ImGui::MenuItem("Duplicate To All")) {
-			currentBank.duplicateToAll(selectedId);
-			historyPush();
-		}
-		if (ImGui::MenuItem("Shuffle Bank")) {
-			currentBank.shuffle();
-			historyPush();
-		}
-		if (ImGui::MenuItem("Clear All")) {
-			currentBank.clear();
-			historyPush();
-		}
-		ImGui::EndPopup();
-	}
+	waveMenu();
 }
 
 
@@ -388,7 +388,7 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 	bool hovered = ImGui::IsHovered(box, id);
 	if (hovered) {
 		ImGui::SetHoveredID(id);
-		if (g.IO.MouseClicked[0] || g.IO.MouseClicked[1]) {
+		if (g.IO.MouseClicked[0]) {
 			ImGui::SetActiveID(id, window);
 			ImGui::FocusWindow(window);
 			g.ActiveIdClickOffset = g.IO.MousePos - box.Min;
@@ -402,14 +402,18 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 		}
 	}
 
-	float theta = -M_PI / 4.0 + 2.0 * M_PI * angle;
+	float theta = -M_PI / 4.0 - 2.0 * M_PI * angle;
 
 	// ActiveZ select
-	if (g.ActiveId == id && g.IO.MouseDown[0]) {
+	if ((g.ActiveId == id && g.IO.MouseDown[0]) || (hovered && g.IO.MouseClicked[1])) {
 		ImVec2 point = g.IO.MousePos;
 		ImVec2 a = ImVec2(rescalef(point.x, box.Min.x, box.Max.x, -1.0, 1.0), rescalef(point.y, box.Min.y, box.Max.y, 1.0, -1.0));
 		a = ImRotate(a * M_SQRT2, cosf(-theta), sinf(-theta));
-		*activeZ = clampf(rescalef(a.y, -1.0, 1.0, 0, BANK_LEN-1), 0.0, BANK_LEN-1);
+		float z = clampf(rescalef(a.y, -1.0, 1.0, 0, BANK_LEN-1), 0.0, BANK_LEN-1);
+		if (g.IO.MouseClicked[1])
+			z = roundf(z);
+		*activeZ = z;
+		selectedId = (int)roundf(z);
 	}
 
 	ImVec2 waveOffset = ImVec2(5, -5);
@@ -429,4 +433,11 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 	}
 
 	ImGui::PopClipRect();
+
+	// Right click context menu
+	if (hovered && g.IO.MouseClicked[1]) {
+		ImGui::OpenPopup("Wave Menu");
+	}
+
+	waveMenu();
 }

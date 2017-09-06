@@ -15,9 +15,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 
-extern "C" {
-#include "noc/noc_file_dialog.h"
-}
+#include "osdialog/osdialog.h"
 
 #include "lodepng/lodepng.h"
 
@@ -120,42 +118,44 @@ static void menuNewBank() {
 	historyPush();
 }
 
-/** `dir` must be at least size PATH_MAX */
-static void getLastDir(char *dir) {
+/** Caller must free() return value, guaranteed to not be NULL */
+static char *getLastDir() {
 	if (lastFilename[0] == '\0') {
 #ifdef ARCH_MAC
-		snprintf(dir, PATH_MAX, "~");
+		return strdup("~");
 #else
-		snprintf(dir, PATH_MAX, ".");
+		return strdup(".");
 #endif
 	}
 	else {
 		char filename[PATH_MAX];
 		strncpy(filename, lastFilename, sizeof(filename));
-		const char *dirP = dirname(filename);
-		strncpy(dir, dirP, PATH_MAX);
+		char *dir = dirname(filename);
+		return strdup(dir);
 	}
 }
 
 static void menuOpenBank() {
-	char dir[PATH_MAX];
-	getLastDir(dir);
-	const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", dir, NULL);
-	if (filename) {
-		currentBank.loadWAV(filename);
-		snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
+	char *dir = getLastDir();
+	char *path = osdialog_file(OSDIALOG_OPEN, dir, NULL, NULL);
+	if (path) {
+		currentBank.loadWAV(path);
+		snprintf(lastFilename, sizeof(lastFilename), "%s", path);
 		historyPush();
+		free(path);
 	}
+	free(dir);
 }
 
 static void menuSaveBankAs() {
-	char dir[PATH_MAX];
-	getLastDir(dir);
-	const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", dir, NULL);
-	if (filename) {
-		currentBank.saveWAV(filename);
-		snprintf(lastFilename, sizeof(lastFilename), "%s", filename);
+	char *dir = getLastDir();
+	char *path = osdialog_file(OSDIALOG_SAVE, dir, "Untitled.wav", NULL);
+	if (path) {
+		currentBank.saveWAV(path);
+		snprintf(lastFilename, sizeof(lastFilename), "%s", path);
+		free(path);
 	}
+	free(dir);
 }
 
 static void menuSaveBank() {
@@ -166,9 +166,13 @@ static void menuSaveBank() {
 }
 
 static void menuSaveWaves() {
-	const char *dirname = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN | NOC_FILE_DIALOG_DIR, NULL, NULL, NULL);
-	if (dirname)
-		currentBank.saveWaves(dirname);
+	char *dir = getLastDir();
+	char *path = osdialog_file(OSDIALOG_OPEN, dir, NULL, NULL);
+	if (path) {
+		currentBank.saveWaves(path);
+		free(path);
+	}
+	free(dir);
 }
 
 static void menuQuit() {
@@ -285,17 +289,25 @@ void renderWaveMenu() {
 		historyPush();
 	}
 	if (ImGui::MenuItem("Open Wave...")) {
-		const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "WAV\0*.wav\0", NULL, NULL);
-		if (filename) {
-			currentBank.waves[selectedId].loadWAV(filename);
+		char *dir = getLastDir();
+		char *path = osdialog_file(OSDIALOG_OPEN, dir, NULL, NULL);
+		if (path) {
+			currentBank.waves[selectedId].loadWAV(path);
 			historyPush();
+			snprintf(lastFilename, sizeof(lastFilename), "%s", path);
+			free(path);
 		}
+		free(dir);
 	}
 	if (ImGui::MenuItem("Save Wave As...")) {
-		const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "WAV\0*.wav\0", NULL, NULL);
-		if (filename) {
-			currentBank.waves[selectedId].saveWAV(filename);
+		char *dir = getLastDir();
+		char *path = osdialog_file(OSDIALOG_SAVE, dir, "Untitled.wav", NULL);
+		if (path) {
+			currentBank.waves[selectedId].saveWAV(path);
+			snprintf(lastFilename, sizeof(lastFilename), "%s", path);
+			free(path);
 		}
+		free(dir);
 	}
 }
 

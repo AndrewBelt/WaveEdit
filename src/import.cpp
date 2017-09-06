@@ -4,9 +4,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 
-extern "C" {
-#include "noc/noc_file_dialog.h"
-}
+#include "osdialog/osdialog.h"
 
 
 static bool showImportPopup = false;
@@ -29,15 +27,15 @@ void importPage() {
 
 	if (showImportPopup) {
 		showImportPopup = false;
-		const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, NULL, NULL, NULL);
-		if (filename) {
+		char *path = osdialog_file(OSDIALOG_OPEN, ".", NULL, NULL);
+		if (path) {
 			offset = 0.0;
 			zoom = 0.0;
 			gain = 0.0;
 			left = 0.0;
 			right = 1.0;
 			mode = CLEAR_IMPORT;
-			audio = loadAudio(filename, &audioLen);
+			audio = loadAudio(path, &audioLen);
 			if (!audio) {
 				ImGui::OpenPopup("Import Error");
 				snprintf(importError, sizeof(importError), "Could not load audio file");
@@ -51,6 +49,7 @@ void importPage() {
 				ImGui::OpenPopup("Import Error");
 				snprintf(importError, sizeof(importError), "Audio file contains %d samples, needs at most %d", audioLen, audioLenMax);
 			}
+			free(path);
 		}
 	}
 
