@@ -25,7 +25,6 @@ extern "C" {
 
 
 static bool showTestWindow = false;
-static bool showImportPopup = false;
 static ImTextureID logoTextureLight;
 static ImTextureID logoTextureDark;
 static ImTextureID logoTexture;
@@ -42,6 +41,7 @@ static enum {
 	EFFECT_PAGE,
 	GRID_PAGE,
 	WATERFALL_PAGE,
+	IMPORT_PAGE,
 	DB_PAGE,
 	NUM_PAGES
 } currentPage = EDITOR_PAGE;
@@ -171,10 +171,6 @@ static void menuSaveWaves() {
 		currentBank.saveWaves(dirname);
 }
 
-static void menuImport() {
-	showImportPopup = true;
-}
-
 static void menuQuit() {
 	SDL_Event event;
 	event.type = SDL_QUIT;
@@ -219,8 +215,6 @@ static void menuKeyCommands() {
 			menuSaveBank();
 		if (ImGui::IsKeyPressed(SDLK_s) && io.KeyShift && !io.KeyAlt)
 			menuSaveBankAs();
-		if (ImGui::IsKeyPressed(SDLK_i) && !io.KeyShift && !io.KeyAlt)
-			menuImport();
 		if (ImGui::IsKeyPressed(SDLK_q) && !io.KeyShift && !io.KeyAlt)
 			menuQuit();
 		if (ImGui::IsKeyPressed(SDLK_z) && !io.KeyShift && !io.KeyAlt)
@@ -258,6 +252,8 @@ static void menuKeyCommands() {
 			if (ImGui::IsKeyPressed(SDLK_4))
 				currentPage = WATERFALL_PAGE;
 			if (ImGui::IsKeyPressed(SDLK_5))
+				currentPage = IMPORT_PAGE;
+			if (ImGui::IsKeyPressed(SDLK_6))
 				currentPage = DB_PAGE;
 		}
 	}
@@ -342,8 +338,6 @@ void renderMenu() {
 				menuSaveBankAs();
 			if (ImGui::MenuItem("Save Waves to Folder...", NULL))
 				menuSaveWaves();
-			if (ImGui::MenuItem("Import Audio...", ImGui::GetIO().OSXBehaviors ? "Cmd+I" : "Ctrl+I"))
-				menuImport();
 			if (ImGui::MenuItem("Quit", ImGui::GetIO().OSXBehaviors ? "Cmd+Q" : "Ctrl+Q"))
 				menuQuit();
 
@@ -683,129 +677,13 @@ void waterfallPage() {
 	{
 		ImGui::PushItemWidth(-1.0);
 		static float amplitude = 0.25;
-		ImGui::SliderFloat("##amplitude", &amplitude, 0.01, 1.0, "Scale: %.2f", 2.0);
+		ImGui::SliderFloat("##amplitude", &amplitude, 0.01, 1.0, "Scale: %.3f", 2.0);
 		static float angle = 0.0;
-		ImGui::SliderFloat("##angle", &angle, 0.0, 1.0, "Angle: %.2f");
+		ImGui::SliderFloat("##angle", &angle, 0.0, 1.0, "Angle: %.3f");
 
 		renderWaterfall("##waterfall", -1.0, amplitude, angle, &morphZ);
 	}
 	ImGui::EndChild();
-}
-
-
-void importPopup() {
-	static float gain;
-	static float offset;
-	static float zoom;
-	static float left;
-	static float right;
-	static ImportMode mode;
-	static float *audio = NULL;
-	static int audioLen;
-	static Bank menuNewBank;
-
-	const int audioLenMin = 32;
-	const int audioLenMax = 44100 * 20;
-
-	static char importError[1024] = "";
-
-	// Open popup and reset state
-	if (showImportPopup) {
-		showImportPopup = false;
-		const char *filename = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, NULL, NULL, NULL);
-		if (filename) {
-			offset = 0.0;
-			zoom = 0.0;
-			gain = 0.0;
-			left = 0.0;
-			right = 1.0;
-			mode = CLEAR_IMPORT;
-			audio = loadAudio(filename, &audioLen);
-			if (!audio) {
-				ImGui::OpenPopup("Import Error");
-				snprintf(importError, sizeof(importError), "Could not load audio file");
-				printf("%s\n", importError);
-			}
-			else if (audioLen < audioLenMin) {
-				ImGui::OpenPopup("Import Error");
-				snprintf(importError, sizeof(importError), "Audio file contains %d samples, needs at least %d", audioLen, audioLenMin);
-			}
-			else if (audioLen > audioLenMax) {
-				ImGui::OpenPopup("Import Error");
-				snprintf(importError, sizeof(importError), "Audio file contains %d samples, needs at most %d", audioLen, audioLenMax);
-			}
-			else {
-				ImGui::OpenPopup("Import");
-			}
-		}
-	}
-	ImGui::SetNextWindowContentWidth(800.0);
-	if (ImGui::BeginPopupModal("Import", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
-		ImGui::PushItemWidth(-1.0);
-
-		// Import samples
-		menuNewBank = currentBank;
-		menuNewBank.importSamples(audio, audioLen, powf(10.0, gain / 20.0), offset, zoom, left, right, mode);
-		// Wave view
-		float samples[BANK_LEN * WAVE_LEN];
-		menuNewBank.getPostSamples(samples);
-		renderWave("##importSamples", 100, NULL, 0, samples, BANK_LEN * WAVE_LEN, NO_TOOL);
-
-		// Parameters
-		ImGui::SliderFloat("##left", &left, 0.0, 1.0, "Left Trim: %.2f");
-
-		ImGui::SliderFloat("##right", &right, 0.0, 1.0, "Right Trim: %.2f");
-
-		if (ImGui::Button("Reset Offset")) offset = 0.0;
-		ImGui::SameLine();
-		ImGui::SliderFloat("##offset", &offset, -1.0, 1.0, "Offset: %.4f");
-
-		if (ImGui::Button("Reset Zoom")) zoom = 0.0;
-		ImGui::SameLine();
-		ImGui::SliderFloat("##zoom", &zoom, -7.0, 7.0, "Zoom: %.2f");
-
-		if (ImGui::Button("Reset Gain")) gain = 0.0;
-		ImGui::SameLine();
-		ImGui::SliderFloat("##gain", &gain, -40.0, 40.0, "Gain: %.2fdB");
-
-		// Modes
-		if (ImGui::RadioButton("Clear", mode == CLEAR_IMPORT)) mode = CLEAR_IMPORT;
-		ImGui::SameLine();
-		if (ImGui::RadioButton("Overwrite", mode == OVERWRITE_IMPORT)) mode = OVERWRITE_IMPORT;
-		ImGui::SameLine();
-		if (ImGui::RadioButton("Mix", mode == ADD_IMPORT)) mode = ADD_IMPORT;
-		ImGui::SameLine();
-		if (ImGui::RadioButton("Ring Modulate", mode == MULTIPLY_IMPORT)) mode = MULTIPLY_IMPORT;
-
-		// Buttons
-		bool cleanup = false;
-
-		if (ImGui::Button("Import")) {
-			currentBank = menuNewBank;
-			historyPush();
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel")) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
-	else {
-		// Cleanup if window is closed
-		if (audio) {
-			delete[] audio;
-			audio = NULL;
-		}
-	}
-
-	if (ImGui::BeginPopupModal("Import Error", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
-		ImGui::Text("%s", importError);
-		if (ImGui::Button("OK")) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
 }
 
 
@@ -825,6 +703,7 @@ void renderMain() {
 				"Effect Editor",
 				"Grid XY View",
 				"Waterfall View",
+				"Import",
 				"WaveEdit Online"
 			};
 			static int hoveredTab = 0;
@@ -837,12 +716,10 @@ void renderMain() {
 		case EFFECT_PAGE: effectPage(); break;
 		case GRID_PAGE: playModeXY = true; gridPage(); break;
 		case WATERFALL_PAGE: waterfallPage(); break;
+		case IMPORT_PAGE: importPage(); break;
 		case DB_PAGE: dbPage(); break;
 		default: break;
 		}
-
-		// Modals
-		importPopup();
 	}
 	ImGui::End();
 

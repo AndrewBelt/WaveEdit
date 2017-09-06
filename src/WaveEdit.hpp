@@ -305,3 +305,10 @@ extern int selectedId;
 
 void dbInit();
 void dbPage();
+
+
+////////////////////
+// import.cpp
+////////////////////
+
+void importPage();
