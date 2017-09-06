@@ -16,8 +16,7 @@ const char *noc_file_dialog_open(int flags,
     OPENFILENAME ofn;       // common dialog box structure
     char strFile[260];
     int ret;
-    char strInitialDir[260];
-    strncpy(strInitialDir, default_path, sizeof(strInitialDir));
+    char strInitialDir[260] = "";
 
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
@@ -28,7 +27,13 @@ const char *noc_file_dialog_open(int flags,
     ofn.nFilterIndex = 1;
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = 0;
-    ofn.lpstrInitialDir = strInitialDir;
+    if (default_path) {
+        strncpy(strInitialDir, default_path, sizeof(strInitialDir));
+        ofn.lpstrInitialDir = strInitialDir;
+    }
+    else {
+        ofn.lpstrInitialDir = NULL;
+    }
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
     if (flags & NOC_FILE_DIALOG_OPEN)
