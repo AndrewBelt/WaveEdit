@@ -182,13 +182,6 @@ extern bool clipboardActive;
 #define BANK_GRID_WIDTH 8
 #define BANK_GRID_HEIGHT 8
 
-enum ImportMode {
-	CLEAR_IMPORT,
-	OVERWRITE_IMPORT,
-	ADD_IMPORT,
-	MULTIPLY_IMPORT,
-};
-
 struct Bank {
 	Wave waves[BANK_LEN];
 
@@ -199,7 +192,6 @@ struct Bank {
 	void setSamples(const float *in);
 	void getPostSamples(float *out);
 	void duplicateToAll(int waveId);
-	void importSamples(const float *in, int inLen, float gain, float offset, float zoom, float left, float right, ImportMode mode);
 	/** Binary dump of the bank struct */
 	void save(const char *filename);
 	void load(const char *filename);
