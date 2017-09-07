@@ -291,6 +291,11 @@ void importPage() {
 			}
 
 			// Trim
+			if (ImGui::Button("Reset Trim")) {
+				leftTrim = 0;
+				rightTrim = BANK_LEN;
+			}
+			ImGui::SameLine();
 			static bool snapTrim = true;
 			ImGui::Checkbox("Snap Trim", &snapTrim);
 			if (snapTrim) {

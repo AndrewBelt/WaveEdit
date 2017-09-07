@@ -336,16 +336,32 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 		gridPos.y = clampf(rescalef(cellPos.y, box.Min.y, box.Max.y, 0.0, gridHeight), 0, gridHeight - 1);
 		selectedId = (int)roundf(gridPos.y) * gridWidth + (int)roundf(gridPos.x);
 
-		if (g.IO.MouseDoubleClicked[0]) {
-			// Round gridPos to integers
-			gridPos.x = roundf(gridPos.x);
-			gridPos.y = roundf(gridPos.y);
-			ImGui::ClearActiveID();
+		if (g.IO.KeyAlt) {
+			// Ctrl-click dragging buffers
+			static Bank dragBank;
+			static Wave dragWave;
+			if (g.IO.MouseClicked[0]) {
+				dragBank = currentBank;
+				dragWave = currentBank.waves[selectedId];
+			}
+			else {
+				currentBank = dragBank;
+				currentBank.waves[selectedId] = dragWave;
+			}
 		}
+		else {
+			// Other behavior
+			if (g.IO.MouseDoubleClicked[0]) {
+				// Round gridPos to integers
+				gridPos.x = roundf(gridPos.x);
+				gridPos.y = roundf(gridPos.y);
+				ImGui::ClearActiveID();
+			}
 
-		if (!g.IO.MouseClicked[1] && (gridX && gridY)) {
-			*gridX = gridPos.x;
-			*gridY = gridPos.y;
+			if (!g.IO.MouseClicked[1] && (gridX && gridY)) {
+				*gridX = gridPos.x;
+				*gridY = gridPos.y;
+			}
 		}
 	}
 
@@ -356,7 +372,6 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 			rescalef(*gridY, 0.0, gridHeight, box.Min.y, box.Max.y)) + cellSize / 2.0;
 		ImGui::GetWindowDrawList()->AddCircleFilled(circlePos, 8.0, ImGui::GetColorU32(ImGuiCol_ScrollbarGrab), 24);
 	}
-
 
 	// Right click context menu
 	if (hovered && g.IO.MouseClicked[1]) {
