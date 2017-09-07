@@ -4,6 +4,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 
+#include <libgen.h>
 #include "osdialog/osdialog.h"
 
 
@@ -114,7 +115,7 @@ static void loadImport(const char *path) {
 	clearImport();
 	audio = loadAudio(path, &audioLen);
 	if (!audio) {
-		snprintf(status, sizeof(status), "Cannot load audio file. Only WAV files currently supported");
+		snprintf(status, sizeof(status), "Cannot load audio file. Only WAV files are supported for now.");
 		return;
 	}
 

@@ -1,5 +1,6 @@
 
 LOCAL = $(PWD)
+
 include ../Makefile-arch.inc
 ifeq ($(ARCH),mac)
 	export CFLAGS = -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk \
@@ -15,6 +16,7 @@ libsamplerate = libsamplerate-0.1.9
 libcurl = curl-7.54.1
 
 
+# This instance of make should be serialized, but -j flags are passed down to each recursive Makefile
 .NOTPARALLEL:
 
 all: $(sdl2) $(jansson) $(libsndfile) $(libsamplerate) $(libcurl)

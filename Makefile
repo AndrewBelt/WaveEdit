@@ -85,11 +85,11 @@ dist: WaveEdit
 ifeq ($(ARCH),lin)
 	cp -R logo*.png fonts catalog dist/WaveEdit
 	cp WaveEdit WaveEdit.sh dist/WaveEdit
-	cp ext/lib/libSDL2-2.0.so.0 dist/WaveEdit
-	cp ext/lib/libsamplerate.so.0 dist/WaveEdit
-	cp ext/lib/libsndfile.so.1 dist/WaveEdit
-	cp ext/lib/libjansson.so.4 dist/WaveEdit
-	cp ext/lib/libcurl.so.4 dist/WaveEdit
+	cp dep/lib/libSDL2-2.0.so.0 dist/WaveEdit
+	cp dep/lib/libsamplerate.so.0 dist/WaveEdit
+	cp dep/lib/libsndfile.so.1 dist/WaveEdit
+	cp dep/lib/libjansson.so.4 dist/WaveEdit
+	cp dep/lib/libcurl.so.4 dist/WaveEdit
 else ifeq ($(ARCH),mac)
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/Resources
@@ -98,16 +98,16 @@ else ifeq ($(ARCH),mac)
 	cp -R logo*.png logo.icns fonts catalog dist/WaveEdit/WaveEdit.app/Contents/Resources
 	# Remap dylibs in executable
 	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp ext/lib/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/ext/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp ext/lib/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/ext/lib/libsamplerate.0.dylib @executable_path/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp ext/lib/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/ext/lib/libsndfile.1.dylib @executable_path/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp ext/lib/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/ext/lib/libjansson.4.dylib @executable_path/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp ext/lib/libcurl.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/ext/lib/libcurl.4.dylib @executable_path/libcurl.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	cp dep/lib/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/dep/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	cp dep/lib/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/dep/lib/libsamplerate.0.dylib @executable_path/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	cp dep/lib/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/dep/lib/libsndfile.1.dylib @executable_path/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	cp dep/lib/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/dep/lib/libjansson.4.dylib @executable_path/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	cp dep/lib/libcurl.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/dep/lib/libcurl.4.dylib @executable_path/libcurl.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 else ifeq ($(ARCH),win)
 	cp -R logo*.png fonts catalog dist/WaveEdit
@@ -115,11 +115,11 @@ else ifeq ($(ARCH),win)
 	cp /mingw32/bin/libgcc_s_dw2-1.dll dist/WaveEdit
 	cp /mingw32/bin/libwinpthread-1.dll dist/WaveEdit
 	cp /mingw32/bin/libstdc++-6.dll dist/WaveEdit
-	cp ext/bin/SDL2.dll dist/WaveEdit
-	cp ext/bin/libsamplerate-0.dll dist/WaveEdit
-	cp ext/bin/libsndfile-1.dll dist/WaveEdit
-	cp ext/bin/libjansson-4.dll dist/WaveEdit
-	cp ext/bin/libcurl-4.dll dist/WaveEdit
+	cp dep/bin/SDL2.dll dist/WaveEdit
+	cp dep/bin/libsamplerate-0.dll dist/WaveEdit
+	cp dep/bin/libsndfile-1.dll dist/WaveEdit
+	cp dep/bin/libjansson-4.dll dist/WaveEdit
+	cp dep/bin/libcurl-4.dll dist/WaveEdit
 endif
 	cd dist && zip -9 -r WaveEdit-$(VERSION)-$(ARCH).zip WaveEdit
 

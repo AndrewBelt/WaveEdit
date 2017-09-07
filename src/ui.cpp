@@ -125,11 +125,7 @@ static void menuNewBank() {
 /** Caller must free() return value, guaranteed to not be NULL */
 static char *getLastDir() {
 	if (lastFilename[0] == '\0') {
-#ifdef ARCH_MAC
-		return strdup("~");
-#else
 		return strdup(".");
-#endif
 	}
 	else {
 		char filename[PATH_MAX];
@@ -171,7 +167,7 @@ static void menuSaveBank() {
 
 static void menuSaveWaves() {
 	char *dir = getLastDir();
-	char *path = osdialog_file(OSDIALOG_OPEN, dir, NULL, NULL);
+	char *path = osdialog_file(OSDIALOG_OPEN_DIR, dir, NULL, NULL);
 	if (path) {
 		currentBank.saveWaves(path);
 		free(path);
