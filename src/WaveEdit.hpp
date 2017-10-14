@@ -104,7 +104,7 @@ void f32_to_i16(const float *in, int16_t *out, int length);
 // util.cpp
 ////////////////////
 
-/** Opens a URL, also happens to with PDFs */
+/** Opens a URL, also happens to work with PDFs */
 void openBrowser(const char *url);
 /** Caller must free(). Returns NULL if unsuccessful */
 float *loadAudio(const char *filename, int *length);

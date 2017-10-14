@@ -1,6 +1,6 @@
 VERSION = 1.0.1beta
 
-FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=core2 -ffast-math \
+FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=nocona -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
 	-I. -Iext -Iext/imgui -Idep/include -Idep/include/SDL2
 CFLAGS =
@@ -56,7 +56,7 @@ endif
 build: WaveEdit
 
 run: WaveEdit
-	./WaveEdit
+	LD_LIBRARY_PATH=dep/lib ./WaveEdit
 
 debug: WaveEdit
 ifeq ($(ARCH),mac)

@@ -16,6 +16,7 @@ struct BankEntry {
 	std::string notes;
 	double datestamp;
 	float samples[BANK_LEN * WAVE_LEN];
+	bool loaded;
 };
 
 std::vector<BankEntry> bankEntries;
@@ -98,6 +99,7 @@ static void refresh() {
 				json_t *entryJ;
 				json_array_foreach(entriesJ, entryId, entryJ) {
 					BankEntry bankEntry;
+					bankEntry.loaded = false;
 
 					// Fill bank entry with metadata
 					json_t *uuidJ = json_object_get(entryJ, "uuid");
@@ -377,7 +379,7 @@ void dbPage() {
 			ImGui::Text("Loading...");
 		}
 		else {
-			for (const BankEntry &bankEntry : bankEntries) {
+			for (BankEntry &bankEntry : bankEntries) {
 				ImGui::PushID(bankEntry.uuid.c_str());
 				renderWave("", 140.0, NULL, 0, bankEntry.samples, BANK_LEN * WAVE_LEN, NO_TOOL);
 				ImGui::SameLine();
@@ -389,7 +391,8 @@ void dbPage() {
 					ImGui::Spacing();
 					ImGui::TextWrapped("%s", bankEntry.notes.c_str());
 				}
-				if (ImGui::Button("Load Bank")) {
+				if (ImGui::Button(bankEntry.loaded ? "Loaded!" : "Load Bank")) {
+					bankEntry.loaded = true;
 					currentBank.clear();
 					currentBank.setSamples(bankEntry.samples);
 				}
