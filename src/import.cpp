@@ -8,62 +8,6 @@
 #include "osdialog/osdialog.h"
 
 
-/** A widget like renderWave() except without editing, and bank lines are overlaid */
-void renderBankWave(const char *name, float height, const float *lines, int linesLen, float bankStart, float bankEnd, int bankLen) {
-	ImGuiContext &g = *GImGui;
-	ImGuiWindow *window = ImGui::GetCurrentWindow();
-	const ImGuiStyle &style = g.Style;
-	const ImGuiID id = window->GetID(name);
-
-	// Compute positions
-	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
-	ImRect box = ImRect(window->DC.CursorPos, window->DC.CursorPos + size);
-	ImRect inner = ImRect(box.Min + style.FramePadding, box.Max - style.FramePadding);
-	ImGui::ItemSize(box, style.FramePadding.y);
-	if (!ImGui::ItemAdd(box, NULL))
-		return;
-
-	// Draw frame
-	ImGui::RenderFrame(box.Min, box.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
-
-	ImGui::PushClipRect(box.Min, box.Max, true);
-	// Draw bank grid
-	float lastTextX = -INFINITY;
-	for (int i = 0; i <= bankLen; i++) {
-		float gridX = rescalef(i, 0, bankLen, bankStart, bankEnd);
-		gridX = rescalef(gridX, 0, linesLen, inner.Min.x, inner.Max.x);
-		// Grid line
-		float thickness;
-		if (i % 64 == 0)
-			thickness = 4.0;
-		else if (i % 8 == 0)
-			thickness = 3.0;
-		else
-			thickness = 2.0;
-		window->DrawList->AddLine(ImVec2(gridX, inner.Min.y), ImVec2(gridX, inner.Max.y), ImGui::GetColorU32(ImGuiCol_WindowBg), thickness);
-		// Text
-		if (fabsf(lastTextX - gridX) >= 18.0 && i < bankLen) {
-			lastTextX = gridX;
-			char label[64];
-			snprintf(label, sizeof(label), "%d", i);
-			ImVec2 labelPos = ImVec2(gridX, inner.Max.y) + ImVec2(5, -13);
-			window->DrawList->AddText(labelPos, ImGui::GetColorU32(ImGuiCol_PlotLines), label);
-		}
-	}
-	// Draw lines
-	if (lines) {
-		ImVec2 lastPos;
-		for (int i = 0; i < linesLen; i++) {
-			ImVec2 pos = ImVec2(rescalef(i, 0, linesLen, inner.Min.x, inner.Max.x), rescalef(lines[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
-			if (i > 0)
-				window->DrawList->AddLine(lastPos, pos, ImGui::GetColorU32(ImGuiCol_PlotLines));
-			lastPos = pos;
-		}
-	}
-	ImGui::PopClipRect();
-}
-
-
 
 enum ImportMode {
 	CLEAR_IMPORT,
@@ -115,7 +59,7 @@ static void loadImport(const char *path) {
 	clearImport();
 	audio = loadAudio(path, &audioLen);
 	if (!audio) {
-		snprintf(status, sizeof(status), "Cannot load audio file. Only WAV files are supported for now.");
+		snprintf(status, sizeof(status), "Cannot load audio file. Only WAV files are supported.");
 		return;
 	}
 
@@ -159,6 +103,11 @@ static float getAudioAmplitude() {
 }
 
 static void computeImport(float *samples) {
+	if (!audio) {
+		currentBank.getPostSamples(samples);
+		return;
+	}
+
 	float importSamples[BANK_LEN * WAVE_LEN] = {};
 
 	// A bunch of weird constants to align the resampler correctly
@@ -222,10 +171,6 @@ void importPage() {
 	{
 		ImGui::PushItemWidth(-1.0);
 
-		if (ImGui::Button("Clear")) {
-			clearImport();
-		}
-		ImGui::SameLine();
 		if (ImGui::Button("Browse...")) {
 			char *path = osdialog_file(OSDIALOG_OPEN, NULL, NULL, NULL);
 			if (path) {
@@ -236,34 +181,31 @@ void importPage() {
 		ImGui::SameLine();
 		ImGui::Text("%s", status);
 
-		if (audio) {
-			playingBank = &importBank;
-			float amp = powf(10.0, gain / 20.0);
+		playingBank = &importBank;
+		float amp = powf(10.0, gain / 20.0);
 
-			// Audio preview
-			float audioPreviewGain[BANK_LEN * WAVE_LEN];
+		// Audio preview
+		ImGui::Text("Imported Audio Preview");
+		float audioPreviewGain[BANK_LEN * WAVE_LEN] = {};
+		if (audioPreview) {
 			for (int i = 0; i < BANK_LEN * WAVE_LEN; i++) {
 				audioPreviewGain[i] = amp * audioPreview[i];
 			}
-			float previewStart = offset * BANK_LEN * WAVE_LEN;
-			float previewRatio = BANK_LEN * WAVE_LEN / (float)audioLen;
-			float previewEnd = previewStart + BANK_LEN * WAVE_LEN * previewRatio * zoom;
-			renderBankWave("audio preview", 200.0, audioPreviewGain,
-				BANK_LEN * WAVE_LEN,
-				previewStart,
-				previewEnd,
-				BANK_LEN);
+		}
+		renderBankWave("audio preview", 200.0, audioPreview ? audioPreviewGain : NULL,
+			BANK_LEN * WAVE_LEN, BANK_LEN);
 
-			// Bank preview
-			// Initialize from previous bank
-			float bankSamples[BANK_LEN * WAVE_LEN];
-			computeImport(bankSamples);
-			renderBankWave("bank preview", 200.0, bankSamples,
-				BANK_LEN * WAVE_LEN,
-				0,
-				BANK_LEN * WAVE_LEN,
-				BANK_LEN);
+		// Bank preview
+		ImGui::Text("Bank Preview");
+		// Initialize from previous bank
+		float bankSamples[BANK_LEN * WAVE_LEN];
+		computeImport(bankSamples);
+		importBank.setSamples(bankSamples);
+		renderBankWave("bank preview", 200.0, bankSamples,
+			BANK_LEN * WAVE_LEN, BANK_LEN);
 
+		if (audio) {
+			ImGui::Text("Import Settings");
 			// Gain
 			if (ImGui::Button("Reset Gain")) gain = 0.0;
 			ImGui::SameLine();
@@ -314,17 +256,20 @@ void importPage() {
 			ImGui::PopItemWidth();
 
 			// Modes
-			if (ImGui::RadioButton("Clear###import", mode == CLEAR_IMPORT)) mode = CLEAR_IMPORT;
+			if (ImGui::RadioButton("Replace All", mode == CLEAR_IMPORT)) mode = CLEAR_IMPORT;
 			ImGui::SameLine();
-			if (ImGui::RadioButton("Overwrite", mode == OVERWRITE_IMPORT)) mode = OVERWRITE_IMPORT;
+			if (ImGui::RadioButton("Replace Partial", mode == OVERWRITE_IMPORT)) mode = OVERWRITE_IMPORT;
 			ImGui::SameLine();
 			if (ImGui::RadioButton("Mix", mode == ADD_IMPORT)) mode = ADD_IMPORT;
 			ImGui::SameLine();
 			if (ImGui::RadioButton("Ring Modulate", mode == MULTIPLY_IMPORT)) mode = MULTIPLY_IMPORT;
 
 			// Apply
-			importBank.setSamples(bankSamples);
-			if (ImGui::Button("Apply")) {
+			if (ImGui::Button("Cancel")) {
+				clearImport();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Import")) {
 				currentBank = importBank;
 				clearImport();
 			}

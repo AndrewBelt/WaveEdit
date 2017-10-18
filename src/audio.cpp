@@ -8,7 +8,7 @@ float playFrequency = 220.0;
 float playFrequencySmooth = playFrequency;
 bool playModeXY = false;
 bool playEnabled = false;
-bool morphSnap = false;
+bool morphInterpolate = true;
 float morphX = 0.0;
 float morphY = 0.0;
 float morphZ = 0.0;
@@ -29,16 +29,17 @@ long srcCallback(void *cb_data, float **data) {
 	const int inLen = 64;
 	static float in[inLen];
 	for (int i = 0; i < inLen; i++) {
-		if (morphSnap) {
-			morphXSmooth = roundf(morphX);
-			morphYSmooth = roundf(morphY);
-			morphZSmooth = roundf(morphZ);
-		}
-		else {
+		if (morphInterpolate) {
 			const float lambdaMorph = fminf(0.1 / playFrequency, 0.5);
 			morphXSmooth = crossf(morphXSmooth, clampf(morphX, 0.0, BANK_GRID_WIDTH - 1), lambdaMorph);
 			morphYSmooth = crossf(morphYSmooth, clampf(morphY, 0.0, BANK_GRID_HEIGHT - 1), lambdaMorph);
 			morphZSmooth = crossf(morphZSmooth, clampf(morphZ, 0.0, BANK_LEN - 1), lambdaMorph);
+		}
+		else {
+			// Snap X, Y, Z
+			morphXSmooth = roundf(morphX);
+			morphYSmooth = roundf(morphY);
+			morphZSmooth = roundf(morphZ);
 		}
 
 		int index = (playIndex + i) % WAVE_LEN;

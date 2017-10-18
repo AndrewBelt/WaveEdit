@@ -391,7 +391,11 @@ void dbPage() {
 					ImGui::Spacing();
 					ImGui::TextWrapped("%s", bankEntry.notes.c_str());
 				}
-				if (ImGui::Button(bankEntry.loaded ? "Loaded!" : "Load Bank")) {
+				if (ImGui::Button(bankEntry.loaded ? "Loaded bank!" : "Load Bank")) {
+					// Make all bankEntries unloaded
+					for (BankEntry &bankEntryOther : bankEntries) {
+						bankEntryOther.loaded = false;
+					}
 					bankEntry.loaded = true;
 					currentBank.clear();
 					currentBank.setSamples(bankEntry.samples);

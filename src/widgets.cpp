@@ -5,7 +5,41 @@
 #include "imgui_internal.h"
 
 
-void waveLine(float *points, int pointsLen, float startIndex, float endIndex, float startValue, float endValue) {
+
+static void drawGrid(ImRect inner, int len) {
+	ImGuiWindow *window = ImGui::GetCurrentWindow();
+	// Compute number of points to skip, should be a power of 2
+	int skip;
+	for (int j = 0; j < 20; j++) {
+		skip = 1 << j;
+		float skipX = (inner.Max.x - inner.Min.x) / len * skip;
+		if (fabsf(skipX) >= 22.0)
+			break;
+	}
+
+	for (int i = 0; i <= len; i += skip) {
+		float gridX = rescalef(i, 0, len, inner.Min.x, inner.Max.x);
+		// Grid line
+		int thicknessIndex = i / skip;
+		float thickness;
+		if (thicknessIndex % 64 == 0)
+			thickness = 3.0;
+		else if (thicknessIndex % 8 == 0)
+			thickness = 2.0;
+		else
+			thickness = 1.0;
+		window->DrawList->AddLine(ImVec2(gridX, inner.Min.y), ImVec2(gridX, inner.Max.y), ImGui::GetColorU32(ImGuiCol_WindowBg), thickness);
+		// Text
+		if (i < len) {
+			char label[64];
+			snprintf(label, sizeof(label), "%d", i);
+			ImVec2 labelPos = ImVec2(gridX, inner.Min.y) + ImVec2(4, -1);
+			window->DrawList->AddText(labelPos, ImGui::GetColorU32(ImGuiCol_PlotLines), label);
+		}
+	}
+}
+
+static void waveLine(float *points, int pointsLen, float startIndex, float endIndex, float startValue, float endValue) {
 	// Switch indices if out of order
 	if (startIndex > endIndex) {
 		float tmpIndex = startIndex;
@@ -25,7 +59,7 @@ void waveLine(float *points, int pointsLen, float startIndex, float endIndex, fl
 }
 
 
-void waveSmooth(float *points, int pointsLen, float index) {
+static void waveSmooth(float *points, int pointsLen, float index) {
 	// TODO
 	for (int i = 0; i <= pointsLen - 1; i++) {
 		const float a = 0.05;
@@ -35,7 +69,7 @@ void waveSmooth(float *points, int pointsLen, float index) {
 }
 
 
-void waveBrush(float *points, int pointsLen, float startIndex, float endIndex, float startValue, float endValue) {
+static void waveBrush(float *points, int pointsLen, float startIndex, float endIndex, float startValue, float endValue) {
 	const float sigma = 10.0;
 	for (int i = 0; i < pointsLen; i++) {
 		float x = i - startIndex;
@@ -46,7 +80,7 @@ void waveBrush(float *points, int pointsLen, float startIndex, float endIndex, f
 }
 
 
-bool editorBehavior(ImGuiID id, const ImRect& box, const ImRect& inner, float *points, int pointsLen, float minIndex, float maxIndex, float minValue, float maxValue, enum Tool tool) {
+static bool editorBehavior(ImGuiID id, const ImRect& box, const ImRect& inner, float *points, int pointsLen, float minIndex, float maxIndex, float minValue, float maxValue, enum Tool tool) {
 	ImGuiContext &g = *GImGui;
 	ImGuiWindow *window = ImGui::GetCurrentWindow();
 
@@ -174,6 +208,9 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 			window->DrawList->AddCircleFilled(pos + ImVec2(0.5, 0.5), 2.0, ImGui::GetColorU32(ImGuiCol_PlotLines), 12);
 		}
 	}
+	// Draw grid
+	drawGrid(inner, pointsLen);
+
 	ImGui::PopClipRect();
 
 	return edited;
@@ -216,14 +253,8 @@ bool renderHistogram(const char *name, float height, float *bars, int barsLen, c
 		ImVec2 pos1 = ImVec2(rescalef(i + 1, 0, ghostLen, inner.Min.x, inner.Max.x) - 1, inner.Max.y);
 		window->DrawList->AddRectFilled(pos0, pos1, ImGui::GetColorU32(ImGuiCol_PlotHistogramHovered), rounding);
 	}
-	// Draw numbers
-	// for (int i = 0; i < barsLen; i += 2) {
-	// 	ImVec2 pos = ImVec2(rescalef(i, 0, barsLen, inner.Min.x, inner.Max.x), inner.Max.y - 15);
-	// 	char label[64];
-	// 	snprintf(label, sizeof(label), "%d", i);
-	// 	ImVec2 labelPos = pos + ImVec2(2, 2);
-	// 	window->DrawList->AddText(labelPos, ImGui::GetColorU32(ImGuiCol_PlotLines), label);
-	// }
+	// Draw grid
+	drawGrid(inner, barsLen);
 
 	ImGui::PopClipRect();
 
@@ -274,6 +305,8 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 		return;
 
 	// Wave grid
+	int selectedStart = mini(selectedId, lastSelectedId);
+	int selectedEnd = maxi(selectedId, lastSelectedId);
 	for (int j = 0; j < BANK_LEN; j++) {
 		int x = j % gridWidth;
 		int y = j / gridWidth;
@@ -281,8 +314,9 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 		ImVec2 cellPos = ImVec2(box.Min.x + cellSize.x * x, box.Min.y + cellSize.y * y);
 		ImRect cellBox = ImRect(cellPos, cellPos + cellSize - padding);
 		ImU32 col = ImGui::GetColorU32(ImGuiCol_FrameBg);
-		if (selectedId == j)
+		if (selectedStart <= j && j <= selectedEnd) {
 			col = ImGui::GetColorU32(ImGuiCol_WindowBg);
+		}
 		ImGui::RenderFrame(cellBox.Min, cellBox.Max, col, true, ImGui::GetStyle().FrameRounding);
 
 		// Draw lines
@@ -334,34 +368,58 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 		ImVec2 cellPos = g.IO.MousePos - cellSize / 2.0;
 		gridPos.x = clampf(rescalef(cellPos.x, box.Min.x, box.Max.x, 0.0, gridWidth), 0, gridWidth - 1);
 		gridPos.y = clampf(rescalef(cellPos.y, box.Min.y, box.Max.y, 0.0, gridHeight), 0, gridHeight - 1);
-		selectedId = (int)roundf(gridPos.y) * gridWidth + (int)roundf(gridPos.x);
+		// Block select
+		int clickedId = (int)roundf(gridPos.y) * gridWidth + (int)roundf(gridPos.x);
 
-		if (g.IO.KeyAlt) {
-			// Ctrl-click dragging buffers
-			static Bank dragBank;
-			static Wave dragWave;
+		// Ctrl-click dragging buffers
+		static Bank dragBank;
+		static Wave dragWaves[BANK_LEN];
+		static int dragId, dragStart, dragEnd;
+		if (g.IO.KeyCtrl && !g.IO.MouseReleased[0]) {
 			if (g.IO.MouseClicked[0]) {
 				dragBank = currentBank;
-				dragWave = currentBank.waves[selectedId];
+				dragId = clickedId;
+				dragStart = selectedStart;
+				dragEnd = selectedEnd;
+				for (int i = dragStart; i <= dragEnd; i++) {
+					dragWaves[i] = currentBank.waves[i];
+				}
 			}
 			else {
+				int offsetId = clickedId - dragId;
 				currentBank = dragBank;
-				currentBank.waves[selectedId] = dragWave;
+				for (int i = dragStart; i <= dragEnd; i++) {
+					int j = i + offsetId;
+					if (0 <= j && j < BANK_LEN)
+						currentBank.waves[j] = dragWaves[i];
+				}
+				// Move selection
+				selectedId = clampi(dragStart + offsetId, 0, BANK_LEN-1);
+				lastSelectedId = clampi(dragEnd + offsetId, 0, BANK_LEN-1);
 			}
 		}
 		else {
-			// Other behavior
-			if (g.IO.MouseDoubleClicked[0]) {
-				// Round gridPos to integers
-				gridPos.x = roundf(gridPos.x);
-				gridPos.y = roundf(gridPos.y);
-				ImGui::ClearActiveID();
+			// Select block
+			if (g.IO.KeyShift) {
+				lastSelectedId = clickedId;
 			}
+			if (!g.IO.KeyShift) {
+				selectedId = clickedId;
+				lastSelectedId = clickedId;
+			}
+		}
 
-			if (!g.IO.MouseClicked[1] && (gridX && gridY)) {
-				*gridX = gridPos.x;
-				*gridY = gridPos.y;
-			}
+		// Update grid (cursor) position
+		if (g.IO.MouseDoubleClicked[0]) {
+			// Round gridPos to integers
+			gridPos.x = roundf(gridPos.x);
+			gridPos.y = roundf(gridPos.y);
+			ImGui::ClearActiveID();
+		}
+
+		if (!g.IO.MouseClicked[1] && (gridX && gridY)) {
+			*gridX = gridPos.x;
+			*gridY = gridPos.y;
 		}
 	}
 
@@ -456,3 +514,38 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 
 	waveMenu();
 }
+
+
+void renderBankWave(const char *name, float height, const float *lines, int linesLen, int bankLen) {
+	ImGuiContext &g = *GImGui;
+	ImGuiWindow *window = ImGui::GetCurrentWindow();
+	const ImGuiStyle &style = g.Style;
+	const ImGuiID id = window->GetID(name);
+
+	// Compute positions
+	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
+	ImRect box = ImRect(window->DC.CursorPos, window->DC.CursorPos + size);
+	ImRect inner = ImRect(box.Min + style.FramePadding, box.Max - style.FramePadding);
+	ImGui::ItemSize(box, style.FramePadding.y);
+	if (!ImGui::ItemAdd(box, NULL))
+		return;
+
+	// Draw frame
+	ImGui::RenderFrame(box.Min, box.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
+
+	ImGui::PushClipRect(box.Min, box.Max, true);
+
+	// Draw lines
+	if (lines) {
+		ImVec2 lastPos;
+		for (int i = 0; i < linesLen; i++) {
+			ImVec2 pos = ImVec2(rescalef(i, 0, linesLen, inner.Min.x, inner.Max.x), rescalef(lines[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
+			if (i > 0)
+				window->DrawList->AddLine(lastPos, pos, ImGui::GetColorU32(ImGuiCol_PlotLines));
+			lastPos = pos;
+		}
+	}
+	drawGrid(inner, bankLen);
+	ImGui::PopClipRect();
+}
+

@@ -29,12 +29,13 @@ static ImTextureID logoTexture;
 static char lastFilename[1024] = "";
 static int styleId = 0;
 int selectedId = 0;
+int lastSelectedId = 0;
 
 
 static void refreshStyle();
 
 
-static enum {
+enum Page {
 	EDITOR_PAGE = 0,
 	EFFECT_PAGE,
 	GRID_PAGE,
@@ -42,7 +43,9 @@ static enum {
 	IMPORT_PAGE,
 	DB_PAGE,
 	NUM_PAGES
-} currentPage = EDITOR_PAGE;
+};
+
+Page currentPage = EDITOR_PAGE;
 
 
 static ImVec4 lighten(ImVec4 col, float p) {
@@ -101,10 +104,23 @@ static void selectWave(int waveId) {
 
 
 static void refreshMorphSnap() {
-	if (morphSnap && morphZSpeed <= 0.f) {
+	if (!morphInterpolate && morphZSpeed <= 0.f) {
 		morphX = roundf(morphX);
 		morphY = roundf(morphY);
 		morphZ = roundf(morphZ);
+	}
+}
+
+/** Focuses to a page which displays the current bank, useful when loading a new bank and showing the user some visual feedback that the bank has changed. */
+static void showCurrentBankPage() {
+	switch (currentPage) {
+		case EFFECT_PAGE:
+		case IMPORT_PAGE:
+		case DB_PAGE:
+			currentPage = EDITOR_PAGE;
+			break;
+		default:
+			break;
 	}
 }
 
@@ -117,6 +133,7 @@ static void menuWebsite() {
 }
 
 static void menuNewBank() {
+	showCurrentBankPage();
 	currentBank.clear();
 	lastFilename[0] = '\0';
 	historyPush();
@@ -139,6 +156,7 @@ static void menuOpenBank() {
 	char *dir = getLastDir();
 	char *path = osdialog_file(OSDIALOG_OPEN, dir, NULL, NULL);
 	if (path) {
+		showCurrentBankPage();
 		currentBank.loadWAV(path);
 		snprintf(lastFilename, sizeof(lastFilename), "%s", path);
 		historyPush();
@@ -417,7 +435,7 @@ void renderPreview() {
 	ImGui::SameLine();
 	ImGui::SliderFloat("##playFrequency", &playFrequency, 1.0f, 10000.0f, "Frequency: %.2f Hz", 0.0f);
 
-	ImGui::Checkbox("Morph Snap", &morphSnap);
+	ImGui::Checkbox("Morph Interpolate", &morphInterpolate);
 	if (playModeXY) {
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-1.0);
@@ -512,6 +530,7 @@ void editorPage() {
 		// ImGui::SameLine();
 		// if (ImGui::RadioButton("Smooth", tool == SMOOTH_TOOL)) tool = SMOOTH_TOOL;
 
+		ImGui::Text("Waveform");
 		const int oversample = 4;
 		float waveOversample[WAVE_LEN * oversample];
 		cyclicOversample(wave->postSamples, waveOversample, WAVE_LEN, oversample);
@@ -520,6 +539,7 @@ void editorPage() {
 			historyPush();
 		}
 
+		ImGui::Text("Harmonics");
 		if (renderHistogram("HarmonicEditor", 200.0, wave->harmonics, WAVE_LEN / 2, wave->postHarmonics, WAVE_LEN / 2, tool)) {
 			currentBank.waves[selectedId].commitHarmonics();
 			historyPush();
@@ -540,11 +560,6 @@ void editorPage() {
 			historyPush();
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Bake")) {
-			currentBank.waves[selectedId].bakeEffects();
-			historyPush();
-		}
-		ImGui::SameLine();
 		if (ImGui::Button("Randomize")) {
 			currentBank.waves[selectedId].randomizeEffects();
 			historyPush();
@@ -554,7 +569,11 @@ void editorPage() {
 			currentBank.waves[selectedId].clearEffects();
 			historyPush();
 		}
-		// if (ImGui::Button("Dump to WAV")) saveBank("out.wav");
+		ImGui::SameLine();
+		if (ImGui::Button("Bake")) {
+			currentBank.waves[selectedId].bakeEffects();
+			historyPush();
+		}
 
 		ImGui::PopItemWidth();
 	}
@@ -650,13 +669,6 @@ void effectPage() {
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Bake")) {
-			for (int i = 0; i < BANK_LEN; i++) {
-				currentBank.waves[i].bakeEffects();
-				historyPush();
-			}
-		}
-		ImGui::SameLine();
 		if (ImGui::Button("Randomize")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].randomizeEffects();
@@ -667,6 +679,13 @@ void effectPage() {
 		if (ImGui::Button("Reset")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].clearEffects();
+				historyPush();
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Bake")) {
+			for (int i = 0; i < BANK_LEN; i++) {
+				currentBank.waves[i].bakeEffects();
 				historyPush();
 			}
 		}
@@ -1025,6 +1044,7 @@ void uiInit() {
 		}
 	}
 
+	styleId = 3;
 	refreshStyle();
 }
 
