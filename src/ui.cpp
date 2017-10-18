@@ -97,6 +97,7 @@ static void getImageSize(ImTextureID id, int *width, int *height) {
 
 static void selectWave(int waveId) {
 	selectedId = waveId;
+	lastSelectedId = selectedId;
 	morphX = (float)(selectedId % BANK_GRID_WIDTH);
 	morphY = (float)(selectedId / BANK_GRID_WIDTH);
 	morphZ = (float)selectedId;

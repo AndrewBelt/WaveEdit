@@ -186,14 +186,28 @@ void importPage() {
 
 		// Audio preview
 		ImGui::Text("Imported Audio Preview");
-		float audioPreviewGain[BANK_LEN * WAVE_LEN] = {};
 		if (audioPreview) {
+			float audioPreviewGain[BANK_LEN * WAVE_LEN] = {};
 			for (int i = 0; i < BANK_LEN * WAVE_LEN; i++) {
 				audioPreviewGain[i] = amp * audioPreview[i];
 			}
+			float previewStart = offset * BANK_LEN * WAVE_LEN;
+			float previewRatio = BANK_LEN * WAVE_LEN / (float)audioLen;
+			float previewEnd = previewStart + BANK_LEN * WAVE_LEN * previewRatio * zoom;
+			float deltaAudio = renderBankWave("audio preview", 200.0, audioPreviewGain,
+				BANK_LEN * WAVE_LEN,
+				previewStart,
+				previewEnd,
+				BANK_LEN);
+			offset += deltaAudio;
 		}
-		renderBankWave("audio preview", 200.0, audioPreview ? audioPreviewGain : NULL,
-			BANK_LEN * WAVE_LEN, BANK_LEN);
+		else {
+			renderBankWave("audio preview", 200.0, NULL,
+				BANK_LEN * WAVE_LEN,
+				0,
+				BANK_LEN * WAVE_LEN,
+				BANK_LEN);
+		}
 
 		// Bank preview
 		ImGui::Text("Bank Preview");
@@ -201,8 +215,12 @@ void importPage() {
 		float bankSamples[BANK_LEN * WAVE_LEN];
 		computeImport(bankSamples);
 		importBank.setSamples(bankSamples);
-		renderBankWave("bank preview", 200.0, bankSamples,
-			BANK_LEN * WAVE_LEN, BANK_LEN);
+		float deltaBank = renderBankWave("bank preview", 200.0, bankSamples,
+			BANK_LEN * WAVE_LEN,
+			0,
+			BANK_LEN * WAVE_LEN,
+			BANK_LEN);
+		offset -= deltaBank * zoom / audioLen * (BANK_LEN * WAVE_LEN);
 
 		if (audio) {
 			ImGui::Text("Import Settings");

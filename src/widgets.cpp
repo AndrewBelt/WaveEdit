@@ -495,6 +495,7 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 			z = roundf(z);
 		*activeZ = z;
 		selectedId = (int)roundf(z);
+		lastSelectedId = selectedId;
 	}
 
 	ImVec2 waveOffset = ImVec2(5, -5);
@@ -524,7 +525,7 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 }
 
 
-void renderBankWave(const char *name, float height, const float *lines, int linesLen, int bankLen) {
+float renderBankWave(const char *name, float height, const float *lines, int linesLen, float bankStart, float bankEnd, int bankLen) {
 	ImGuiContext &g = *GImGui;
 	ImGuiWindow *window = ImGui::GetCurrentWindow();
 	const ImGuiStyle &style = g.Style;
@@ -536,7 +537,25 @@ void renderBankWave(const char *name, float height, const float *lines, int line
 	ImRect inner = ImRect(box.Min + style.FramePadding, box.Max - style.FramePadding);
 	ImGui::ItemSize(box, style.FramePadding.y);
 	if (!ImGui::ItemAdd(box, NULL))
-		return;
+		return 0.0;
+
+	// Behavior
+	bool hovered = ImGui::IsHovered(box, id);
+	if (hovered) {
+		ImGui::SetHoveredID(id);
+		if (g.IO.MouseClicked[0]) {
+			ImGui::SetActiveID(id, window);
+			ImGui::FocusWindow(window);
+			g.ActiveIdClickOffset = g.IO.MousePos - box.Min;
+		}
+	}
+
+	// Unhover
+	if (g.ActiveId == id) {
+		if (!g.IO.MouseDown[0]) {
+			ImGui::ClearActiveID();
+		}
+	}
 
 	// Draw frame
 	ImGui::RenderFrame(box.Min, box.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
@@ -553,7 +572,19 @@ void renderBankWave(const char *name, float height, const float *lines, int line
 			lastPos = pos;
 		}
 	}
-	drawGrid(inner, bankLen);
+
+	// Draw grid
+	ImRect gridInner = inner;
+	gridInner.Min.x = rescalef(bankStart, 0, linesLen, inner.Min.x, inner.Max.x);
+	gridInner.Max.x = rescalef(bankEnd, 0, linesLen, inner.Min.x, inner.Max.x);
+	drawGrid(gridInner, bankLen);
 	ImGui::PopClipRect();
+
+	// Behavior
+	float delta = 0.0;
+	if (g.ActiveId == id) {
+		delta = g.IO.MouseDelta.x / (inner.Max.x, inner.Max.x);
+	}
+	return delta;
 }
 

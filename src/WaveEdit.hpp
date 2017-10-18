@@ -282,8 +282,10 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 bool renderHistogram(const char *name, float height, float *bars, int barsLen, const float *ghost, int ghostLen, enum Tool tool);
 void renderBankGrid(const char *name, float height, int gridWidth, float *gridX, float *gridY);
 void renderWaterfall(const char *name, float height, float amplitude, float angle, float *activeZ);
-/** A widget like renderWave() except without editing, and bank lines are overlaid */
-void renderBankWave(const char *name, float height, const float *lines, int linesLen, int bankLen);
+/** A widget like renderWave() except without editing, and bank lines are overlaid
+Returns the relative amount dragged
+*/
+float renderBankWave(const char *name, float height, const float *lines, int linesLen, float bankStart, float bankEnd, int bankLen);
 
 ////////////////////
 // ui.cpp
