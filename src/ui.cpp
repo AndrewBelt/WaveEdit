@@ -199,6 +199,11 @@ static void menuQuit() {
 	SDL_PushEvent(&event);
 }
 
+static void menuSelectAll() {
+	selectedId = 0;
+	lastSelectedId = BANK_LEN-1;
+}
+
 static void menuCopy() {
 	currentBank.waves[selectedId].clipboardCopy();
 }
@@ -214,13 +219,17 @@ static void menuPaste() {
 	historyPush();
 }
 
-static void menuRandomize() {
-	currentBank.waves[selectedId].randomizeEffects();
+static void menuClear() {
+	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
+		currentBank.waves[i].clear();
+	}
 	historyPush();
 }
 
-static void menuClear() {
-	currentBank.waves[selectedId].clear();
+static void menuRandomize() {
+	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
+		currentBank.waves[i].randomizeEffects();
+	}
 	historyPush();
 }
 
@@ -243,6 +252,8 @@ static void menuKeyCommands() {
 			historyUndo();
 		if (ImGui::IsKeyPressed(SDLK_z) && io.KeyShift && !io.KeyAlt)
 			historyRedo();
+		if (ImGui::IsKeyPressed(SDLK_a) && !io.KeyShift && !io.KeyAlt)
+			menuSelectAll();
 		if (ImGui::IsKeyPressed(SDLK_c) && !io.KeyShift && !io.KeyAlt)
 			menuCopy();
 		if (ImGui::IsKeyPressed(SDLK_x) && !io.KeyShift && !io.KeyAlt)
@@ -283,29 +294,37 @@ static void menuKeyCommands() {
 
 void renderWaveMenu() {
 	char menuName[128];
-	snprintf(menuName, sizeof(menuName), "(Wave %d)", selectedId);
+	int selectedStart = mini(selectedId, lastSelectedId);
+	int selectedEnd = maxi(selectedId, lastSelectedId);
+	if (selectedStart != selectedEnd)
+		snprintf(menuName, sizeof(menuName), "(Wave %d to %d)", selectedStart, selectedEnd);
+	else
+		snprintf(menuName, sizeof(menuName), "(Wave %d)", selectedId);
 	ImGui::MenuItem(menuName, NULL, false, false);
 
-	if (ImGui::MenuItem("Copy", ImGui::GetIO().OSXBehaviors ? "Cmd+C" : "Ctrl+C")) {
-		currentBank.waves[selectedId].clipboardCopy();
-	}
-	if (ImGui::MenuItem("Cut", ImGui::GetIO().OSXBehaviors ? "Cmd+X" : "Ctrl+X")) {
-		currentBank.waves[selectedId].clipboardCopy();
-		currentBank.waves[selectedId].clear();
-		historyPush();
-	}
-	if (ImGui::MenuItem("Paste", ImGui::GetIO().OSXBehaviors ? "Cmd+V" : "Ctrl+V", false, clipboardActive)) {
-		currentBank.waves[selectedId].clipboardPaste();
-		historyPush();
-	}
 	if (ImGui::MenuItem("Clear", "Delete")) {
-		currentBank.waves[selectedId].clear();
-		historyPush();
+		menuClear();
 	}
 	if (ImGui::MenuItem("Randomize Effects", "R")) {
-		currentBank.waves[selectedId].randomizeEffects();
-		historyPush();
+		menuRandomize();
 	}
+
+	if (selectedStart != selectedEnd) {
+		ImGui::MenuItem("##spacer3", NULL, false, false);
+		snprintf(menuName, sizeof(menuName), "(Wave %d)", selectedId);
+		ImGui::MenuItem(menuName, NULL, false, false);
+	}
+
+	if (ImGui::MenuItem("Copy", ImGui::GetIO().OSXBehaviors ? "Cmd+C" : "Ctrl+C")) {
+		menuCopy();
+	}
+	if (ImGui::MenuItem("Cut", ImGui::GetIO().OSXBehaviors ? "Cmd+X" : "Ctrl+X")) {
+		menuCut();
+	}
+	if (ImGui::MenuItem("Paste", ImGui::GetIO().OSXBehaviors ? "Cmd+V" : "Ctrl+V", false, clipboardActive)) {
+		menuPaste();
+	}
+
 	if (ImGui::MenuItem("Open Wave...")) {
 		char *dir = getLastDir();
 		char *path = osdialog_file(OSDIALOG_OPEN, dir, NULL, NULL);
@@ -379,6 +398,8 @@ void renderMenu() {
 				historyUndo();
 			if (ImGui::MenuItem("Redo", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+Z" : "Ctrl+Shift+Z"))
 				historyRedo();
+			if (ImGui::MenuItem("Select All", ImGui::GetIO().OSXBehaviors ? "Cmd+A" : "Ctrl+A"))
+				menuSelectAll();
 			ImGui::MenuItem("##spacer", NULL, false, false);
 			renderWaveMenu();
 			ImGui::EndMenu();

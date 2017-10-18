@@ -398,6 +398,14 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 				lastSelectedId = clampi(dragEnd + offsetId, 0, BANK_LEN-1);
 			}
 		}
+		else if (g.IO.MouseClicked[1]) {
+			if (selectedStart <= clickedId && clickedId <= selectedEnd) {
+			}
+			else {
+				selectedId = clickedId;
+				lastSelectedId = clickedId;
+			}
+		}
 		else {
 			// Select block
 			if (g.IO.KeyShift) {
