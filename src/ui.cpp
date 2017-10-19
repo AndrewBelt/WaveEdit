@@ -373,7 +373,7 @@ void renderMenu() {
 	// Draw main menu
 	if (ImGui::BeginMenuBar()) {
 		// This will be hidden by the window with the logo
-		if (ImGui::BeginMenu("                        " TOSTRING(VERSION), false)) {
+		if (ImGui::BeginMenu("                        v" TOSTRING(VERSION), false)) {
 			ImGui::EndMenu();
 		}
 		// File
@@ -440,7 +440,7 @@ void renderMenu() {
 				menuManual();
 			if (ImGui::MenuItem("Webpage", "", false))
 				menuWebsite();
-			if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
+			// if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();
@@ -659,22 +659,6 @@ void effectPage() {
 		}
 		ImGui::PopItemWidth();
 
-		if (ImGui::Button("Normalize All")) {
-			for (int i = 0; i < BANK_LEN; i++) {
-				currentBank.waves[i].normalize = true;
-				currentBank.waves[i].updatePost();
-				historyPush();
-			}
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Normalize None")) {
-			for (int i = 0; i < BANK_LEN; i++) {
-				currentBank.waves[i].normalize = false;
-				currentBank.waves[i].updatePost();
-				historyPush();
-			}
-		}
-		ImGui::SameLine();
 		if (ImGui::Button("Cycle All")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].cycle = true;
@@ -686,6 +670,22 @@ void effectPage() {
 		if (ImGui::Button("Cycle None")) {
 			for (int i = 0; i < BANK_LEN; i++) {
 				currentBank.waves[i].cycle = false;
+				currentBank.waves[i].updatePost();
+				historyPush();
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Normalize All")) {
+			for (int i = 0; i < BANK_LEN; i++) {
+				currentBank.waves[i].normalize = true;
+				currentBank.waves[i].updatePost();
+				historyPush();
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Normalize None")) {
+			for (int i = 0; i < BANK_LEN; i++) {
+				currentBank.waves[i].normalize = false;
 				currentBank.waves[i].updatePost();
 				historyPush();
 			}

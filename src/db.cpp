@@ -309,6 +309,9 @@ static void uploadPopup() {
 		if (ImGui::SmallButton("https://creativecommons.org/publicdomain/zero/1.0/"))
 			openBrowser("https://creativecommons.org/publicdomain/zero/1.0/");
 
+		if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+
+		ImGui::SameLine();
 		bool uploadable = (strlen(title) > 0 && strlen(attribution) > 0);
 		if (!uploadable)
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
@@ -321,8 +324,6 @@ static void uploadPopup() {
 		}
 		if (!uploadable)
 			ImGui::PopStyleVar();
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
 
 		ImGui::EndPopup();
 	}
@@ -399,6 +400,7 @@ void dbPage() {
 					bankEntry.loaded = true;
 					currentBank.clear();
 					currentBank.setSamples(bankEntry.samples);
+					historyPush();
 				}
 				if (sekret[0]) {
 					if (quarantine) {
