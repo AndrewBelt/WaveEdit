@@ -4,17 +4,15 @@ The wavetable and bank editor for the Synthesis Technology [E370](http://synthte
 
 ### Building
 
-Install the following dependencies.
+Make dependencies with
 
-- [SDL2](https://www.libsdl.org/)
-- [libsamplerate](http://www.mega-nerd.com/SRC/)
-- [libsndfile](http://www.mega-nerd.com/libsndfile/)
-- pkg-config (build requirement)
-- [MSYS2](http://www.msys2.org/) (if using Windows)
+	cd dep
+	make
 
 Clone the in-source dependencies.
 
-	git submodule update --init
+	cd ..
+	git submodule update --init --recursive
 
 Compile the program. The Makefile will automatically detect your operating system.
 
