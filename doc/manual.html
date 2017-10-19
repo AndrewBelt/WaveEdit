@@ -13,11 +13,23 @@
   font-family: "pnr";
   font-style: normal;
   font-weight: normal;
-  src: url("pnr.woff") format("woff");
+  src: url("Montserrat/Montserrat-Regular.ttf");
+}
+@font-face {
+  font-family: "pnr";
+  font-style: italic;
+  font-weight: normal;
+  src: url("Montserrat/Montserrat-Italic.ttf");
+}
+@font-face {
+  font-family: "pnr";
+  font-style: normal;
+  font-weight: bold;
+  src: url("Montserrat/Montserrat-Bold.ttf");
 }
 body {
   color: #222;
-  font-family: 'pnr';
+  font-family: 'pnr', monospace;
   font-size: 16pt;
 }
 h1,
@@ -55,18 +67,19 @@ th {
     </style>
   </head>
   <body><h1>Synthesis Technology WaveEdit</h1>
-<p><em>WaveEdit</em> is a cross-platform (Mac/Windows/Linux) wavetable and bank editor designed for the Synthesis Technology <a href="http://synthtech.com/eurorack/E370/">E370 Quad Morphing VCO</a> and <a href="http://synthtech.com/eurorack/E352/">E352 Cloud Terrarium VCO</a> Eurorack synthesizer modules.</p>
-<p><em>WaveEdit</em> is available for download at <a href="http://synthtech.com/waveedit">http://synthtech.com/waveedit</a>.</p>
-<p><img src="main.png" alt=""></p>
+<p><em>WaveEdit</em> is a cross-platform (Mac/Windows/Linux) wavetable and bank editor designed for the Synthesis Technology <a href="http://synthtech.com/eurorack/E370/">E370 Quad Morphing VCO</a> and <a href="http://synthtech.com/eurorack/E352/">E352 Cloud Terrarium VCO</a> Eurorack synthesizer modules.
+It was developed by <a href="https://andrewbelt.name/">Andrew Belt</a> for Synthesis Technology as a stretch goal of the E370 Kickstarter.</p>
+<p><em>WaveEdit</em> is available for free download at <a href="http://synthtech.com/waveedit">http://synthtech.com/waveedit</a>.</p>
+<p><img src="images/2017-10-18-012234_1024x768_scrot.png" alt=""></p>
 <h2>Overview</h2>
 <p>In <em>WaveEdit</em> and the Synthesis Technology E370 and E352 modules, you can load a bank of wavetables and morph/interpolate between them as they cycle at a particular frequency.</p>
 <ul>
 <li>A bank contains 64 wavetables</li>
 <li>A wavetable contains 256 samples</li>
 </ul>
-<p>In Z mode, all 64 wavetables are positioned on a line, and the Z parameter smoothly interpolates wavetables near its value.
+<p>In Z mode, all 64 wavetables are positioned on a line, and the Z parameter interpolates wavetables from wave 0 to wave 63.
 In XY mode, the wavetables are positioned on an 8x8 grid and interpolated in 2D.</p>
-<p>There are several methods for creating a bank of wavetables.
+<p>There are several methods for creating a bank of wavetables in <em>WaveEdit</em>.
 You may combine any of these methods in unique ways to create your own banks.</p>
 <ol>
 <li>Draw samples on the waveform display using the drawing tools</li>
@@ -76,11 +89,140 @@ You may combine any of these methods in unique ways to create your own banks.</p
 <li>Duplicate the wavetable to all slots in the bank</li>
 <li>Draw an effect across many wavetables in the bank</li>
 <li>Randomize one or all of the wavetables' effects</li>
+<li>Import audio and stretch/crop it into adjacent wavetables</li>
 </ol>
 <p>Once you are satisfied with your bank using the bank visualization pages or audio preview, you can save it as a WAV file and load it by the E370 and E352 VCOs with a microSD card.
-You can share your favorite banks by submitting them to the WaveEdit Online database.</p>
-
-    <p class="page-break"></p><h2>Key Commands</h2>
+You can share your favorite banks by submitting them to the <em>WaveEdit</em> Online database.</p>
+<h2>Audio Preview</h2>
+<p><img src="images/2017-10-18-112710_1021x63_scrot.png" alt=""></p>
+<p>At any time while using the program, you may preview the bank you are editing using the audio preview at the top of the user interface.
+If you have multiple audio devices on your computer, you may open the <strong>Audio Output</strong> menu item in the menu bar to select your preferred device.</p>
+<p>Click the <strong>Play</strong> checkbox or SPACE to begin previewing.
+The currently selected wavetable will play in a cycle at the configured <strong>Volume</strong> and <strong>Frequency</strong>.</p>
+<p>The <strong>Morph Z</strong> slider selects the position in Z space that is being previewed.
+At integer positions, the exact wavetable with an index corresponding to the exact Z value will be played.
+At numbers between integers, you will hear a blend of nearby wavetables.
+The <strong>Morph Z Speed</strong> slider affects the speed that the Morph Z parameter is automatically increasing.
+With it, you can modulate the Z position with a low-frequency saw wave to preview all wavetables in the bank over time.
+When the Grid XY View is selected, these two sliders will control the <strong>Morph X</strong> and <strong>Morph Y</strong> position instead.</p>
+<p>The <strong>Morph Interpolate</strong> checkbox enables smooth interpolation between adjacent wavetables.
+Disable this to use no interpolation and instead step/glitch the waveforms as you morph through the bank.</p>
+<p class="page-break"></p>
+<h2>Pages</h2>
+<p>Immediately below the audio preview section are tabs which select the page of <em>WaveEdit</em> to be displayed.</p>
+<h3>Waveform Editor</h3>
+<p>In the Waveform Editor page, you can directly edit the samples of a wavetable, its harmonic spectrum, and the effects applied to it.</p>
+<p><img src="images/2017-10-18-011745_1024x768_scrot.png" alt=""></p>
+<p>You can interact with the <strong>Waveform</strong> and <strong>Harmonic</strong> display with the mouse, using the tools listed above it.
+The <strong>Pencil</strong> tool allows you to draw samples and harmonics directly on the displays.
+The <strong>Brush</strong> tool smoothly adjusts adjacent samples depending on the amount of time the mouse is held.
+To adjust a single sample without modifying adjacent samples, use the <strong>Grab</strong> tool.
+Use the <strong>Line</strong> tool to draw a straight line by dragging and the <strong>Erase</strong> tool to set samples and harmonics to zero as you drag across them.</p>
+<p>To the right of the tool selection, you can load a number of preset wavetables from the <code>catalog/</code> subfolders.
+You may customize these presets by adding WAV files with 256 samples to a subfolder in the catalog.
+You may even create new subfolders, optionally prefixing the filenames with numbers to alphabetically sort them.</p>
+<p>Below the Harmonic display are sliders to adjust the effect amount for the active wavetable.
+The meanings of the effects and effect buttons are described in the Effect Editor section.</p>
+<p>The Waveform display shows dots at each of the exact sample values in the wavetable and lines for the bandlimited waveform after effects are applied.
+The values of the dots will be saved to the WAV file during export, but the lines will be approximately what you hear at audio frequencies.
+The &quot;wiggles&quot; are a result of the <a href="https://en.wikipedia.org/wiki/Gibbs_phenomenon">Gibbs phenomenon</a> when applying a brickwall lowpass filter to the digital samples at the Nyquist frequency.
+This is why wavetables do not sound &quot;stepped&quot; when passed through a digital-to-analog converter.</p>
+<p>When the Waveform display is modified, the Harmonic display will update, and vise-versa.
+The first harmonic (index 0) of the Harmonic display corresponds to the DC offset of the wavetable, which is its average vertical offset from zero.
+When editing either the Waveform or Harmonic display, you are modifying pre-effect samples.
+If effects are applied to the wavetable, you will see &quot;ghost&quot; bars in the Harmonic display, representing the harmonics after post-processing is applied.</p>
+<p>The sidebar on the left displays which wavetable is selected.
+The Morph Z parameter is represented by a circle and can be dragged with the left mouse button.
+You can select a range of wavetables by left-clicking on the first wavetable in the desired range and Shift-clicking on the last wavetable.
+Right click your selection to display a context menu with options about the active wavetable or range of wavetables.
+To copy a selection of wavetables to a different location in the bank, Ctrl-click and drag the selection in the sidebar.
+Double-click on a wavetable to &quot;lock&quot; the Z parameter to the nearest wavetable index.</p>
+<p class="page-break"></p>
+<h3>Effect Editor</h3>
+<p>In the Effect Editor page, you can modify in bulk the effect magnitudes of all wavetables in a bank.</p>
+<p><img src="images/2017-10-18-011843_1024x768_scrot.png" alt=""></p>
+<p>For each effect, you can increase/decrease the average value of the effect magnitudes of all wavetables at once using the <strong>Average</strong> slider.
+Beneath it, the actual magnitudes of the effect for each of the wavetables are shown in a bar display.
+You can edit this bar display much like in the Harmonic Editor, using the editing tools at the top of the page.
+The effects are as follows.</p>
+<ul>
+<li><strong>Pre-Gain</strong> applies gain to the signal before any effects are applied.</li>
+<li><strong>Phase Shift</strong> shifts the waveform in time, which is seen as a horizontal shift in the Waveform display.</li>
+<li><strong>Harmonic Shift</strong> rotates the phase of each harmonic equally. Like Phase Shift, this effect has no effect on sound unless effects are applied later in the effects chain.</li>
+<li><strong>Comb Filter</strong> copies and delays the signal with feedback. This is similar to using a very short delay effect processor. The volume level may decrease significantly with this effect, depending on your waveform, so it is useful to apply pre- or post-gain or to Normalize the final signal.</li>
+<li><strong>Ring Modulation</strong> multiplies the signal by a sine wave at an adjustable frequency.</li>
+<li><strong>Chebyshev Wavefolding</strong> applies a modified Chebyshev function to the incoming signal, which increases the level of small samples and soft-clips large samples.</li>
+<li><strong>Sample &amp; Hold</strong> keeps the sample constant for an adjustable amount of time, resulting in a stepped wavetable and extra higher harmonics.</li>
+<li><strong>Quantization</strong> reduces the bit-rate of the waveform, giving a similar stepping effect as Sample &amp; Hold.</li>
+<li><strong>Slew Limiter</strong> clamps the derivative of the signal to maximum and minimum values, resulting in a sort of lowpass filter in some cases and a source of higher harmonics in others (for example when slew-limiting a sine wave).</li>
+<li><strong>Lowpass Filter</strong> applies a brickwall filter to the harmonics to filter harmonics higher than an adjustable threshold.</li>
+<li><strong>Highpass Filter</strong> does the same but filters low harmonics.</li>
+<li><strong>Post-Gain</strong> applies gain to the final post-processed signal.</li>
+</ul>
+<p>At the bottom of the page (and on the bottom of the Waveform Editor page), a number of buttons can change the state of the wavetables' effects.</p>
+<ul>
+<li><strong>Normalize</strong> automatically adjusts the final gain and DC offset so that the minimum and maximum samples are at -1 and 1, respectively.</li>
+<li><strong>Cycle</strong> removes the &quot;jump&quot; from the last sample to the first when the wavetable is cycled by applying a gradual slope to all of the samples.</li>
+<li><strong>Randomize</strong> sets the effect magnitudes to random values, which can be helpful when you need inspiration.</li>
+<li><strong>Reset</strong> sets all effect magnitudes to zero but leaves the pre-processed waveform intact.</li>
+<li><strong>Bake</strong> applies the post-processed waveforms to become the new pre-processed waveforms, and sets all effect magnitudes to zero.</li>
+</ul>
+<p>After all effects are applied to each wavetable, the post-processor checks that the values are between -1 and 1 and clips values outside that range.
+Adjusting the gains or using the Normalize feature can prevent this from happening.</p>
+<p class="page-break"></p>
+<h3>Grid XY View</h3>
+<p>The Grid XY View page allows you to visualize and interact with the bank in two dimensions, using XY coordinates instead of Z.</p>
+<p><img src="images/2017-10-18-011858_1024x768_scrot.png" alt=""></p>
+<p>While on this page, the audio preview switches to XY mode and the Morph sliders allow you to change the X and Y morphing position.
+The grid allows you to interact with the bank in exactly the same way as in the sidebar of the Waveform Editor page.
+You can select a wavetable or range of wavetables, copy them to a different position, right-click on the grid, and clear, randomize, and copy/paste wavetables.</p>
+<p class="page-break"></p>
+<h3>Waterfall View</h3>
+<p>The Waterfall View page allows you to visualize all wavetables simultaneously in Z morphing mode.</p>
+<p><img src="images/2017-10-18-011933_1024x768_scrot.png" alt=""></p>
+<p>The <strong>Scale</strong> slider adjusts the vertical exaggeration of the waterfall plot, and the <strong>Angle</strong> slider rotates the plot in 3D.
+You can click and drag on the waterfall plot to set the Z morphing position and right-click a wave for a context menu.</p>
+<p class="page-break"></p>
+<h3>Import</h3>
+<p>The Import page is useful for creating banks based on audio files you may have in your collection.</p>
+<p><img src="images/2017-10-18-012040_1024x768_scrot.png" alt=""></p>
+<p>To import an audio file, click <strong>Browse</strong> near the top.
+Only WAV files can be selected, and they must be a reasonable length, approximately between 32 and 16,000,000 samples
+Once loaded, the waveform of the audio file will appear in the <strong>Imported Audio Preview</strong> display.
+The <strong>Bank Preview</strong> displays all 64 consecutive wavetables in the bank.
+You can click and drag the Imported Audio Preview and Bank Preview waveforms to re-align the file, resulting in a change to the Offset parameter, explained below.
+Before importing the file to your current bank, you can modify the following parameters to change the scaling and behavior of the file.</p>
+<ul>
+<li><strong>Gain</strong>, <strong>Reset Gain</strong>, and <strong>Normalize</strong> adjust the volume of the audio file before importing.</li>
+<li><strong>Offset</strong> adjusts the horizontal position of the audio file when placed in the bank.</li>
+<li><strong>Zoom</strong> stretches the file by slowing down or speeding up the time before being placed in the bank. <strong>Zoom 1:1</strong> sets the zoom level to 100%, corresponding to equal-sample matching between the bank and imported audio. <strong>Zoom Fit</strong> sets the zoom so that the audio file stretches exactly to the size of the bank. Use <strong>Snap to Power of 2</strong> to lock the zoom level to ...12.5%, 25%, 50%, 100%, 200%, 400%, 800%, and so on. This is useful when importing wavetables from other software with different wavetable sizes.</li>
+<li><strong>Left Trim</strong> and <strong>Right Trim</strong> cut away the imported audio by a certain amount to restrict it to a range of wavetables. Use <strong>Snap Trim</strong> to lock the numbers to integers corresponding to wavetable indices.</li>
+</ul>
+<p>You can mix the imported audio into your existing bank with the following methods.</p>
+<ul>
+<li><strong>Replace All</strong> clears the entire bank, leaving only the imported audio after clicking Import.</li>
+<li><strong>Replace Partial</strong> clears only the portion of the bank overwritten by the audio before importing.</li>
+<li><strong>Mix</strong> sums the existing bank wavetables with the imported audio.</li>
+<li><strong>Ring Modulate</strong> multiplies the existing bank with the audio. Note that the wavetables outside the audio's position are cleared, since the samples are multiplied by the audio at that point, which is zero.</li>
+</ul>
+<p>Finally, click <strong>Import</strong> to finalize the parameters to continue working on the bank in other pages, or <strong>Clear</strong> to unload the audio and start over.</p>
+<p class="page-break"></p>
+<h3>WaveEdit Online</h3>
+<p>The WaveEdit Online page allows you to download banks created by others and share your own on an online database.</p>
+<p><img src="images/2017-10-18-200323_1024x768_scrot.png" alt=""></p>
+<p>The <em>WaveEdit Online</em> database stores entire banks which users have shared to the public.</p>
+<p>You can scroll through the pages of banks, or search using keywords in the search box.
+To try a bank you are interested in, click <strong>Load Bank</strong>.
+Note that this replaces the current bank, although you can undo the action with Edit &gt; Undo.
+After loading a bank, you can preview it without leaving the WaveEdit Online page using the Morph Z and Morph Z Speed sliders in the audio preview as usual.</p>
+<p>If you would like to share your currently-loaded bank with others, click <strong>Upload Current Bank</strong>.
+A popup window will display with a form with Title, Author, and optional Notes text boxes.
+After clicking Upload, the bank will be sent to the server and will appear in the list after it has been approved by a <em>WaveEdit Online</em> moderator.
+Note that by uploading your bank, you agree to release the bank into the public domain (CC0 license).</p>
+<p class="page-break"></p>
+<h2>Key Commands</h2>
+<p>The most efficient way to use <em>WaveEdit</em> is with a combination of mouse actions and key commands.
+Many of these key commands are listed in the menu bar and context menu, but here is a complete list for your convenience.</p>
 <table>
 <thead>
 <tr>
@@ -111,11 +253,6 @@ You can share your favorite banks by submitting them to the WaveEdit Online data
 <td>Ctrl+Shift+S</td>
 </tr>
 <tr>
-<td>Import Audio</td>
-<td>Cmd+I</td>
-<td>Ctrl+I</td>
-</tr>
-<tr>
 <td>Quit</td>
 <td>Cmd+Q</td>
 <td>Ctrl+Q</td>
@@ -129,6 +266,11 @@ You can share your favorite banks by submitting them to the WaveEdit Online data
 <td>Redo</td>
 <td>Cmd+Shift+Z</td>
 <td>Ctrl+Shift+Z</td>
+</tr>
+<tr>
+<td>Select All Waves</td>
+<td>Cmd+A</td>
+<td>Ctrl+A</td>
 </tr>
 <tr>
 <td>Copy Wave</td>
@@ -181,9 +323,14 @@ You can share your favorite banks by submitting them to the WaveEdit Online data
 <td>4</td>
 </tr>
 <tr>
+<td>Import</td>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr>
 <td>WaveEdit Online</td>
-<td>5</td>
-<td>5</td>
+<td>6</td>
+<td>6</td>
 </tr>
 </tbody>
 </table>
