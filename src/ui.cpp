@@ -1050,6 +1050,7 @@ static void refreshStyle() {
 
 void uiInit() {
 	ImGui::GetIO().IniFilename = NULL;
+	styleId = 3;
 
 	// Load fonts
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("fonts/Lekton-Regular.ttf", 15.0);
@@ -1066,7 +1067,6 @@ void uiInit() {
 		}
 	}
 
-	styleId = 3;
 	refreshStyle();
 }
 
