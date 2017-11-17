@@ -321,7 +321,7 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 
 		// Draw lines
 		ImGui::PushClipRect(cellBox.Min, cellBox.Max, true);
-		// We only draw an eigth of the points plus the last one
+		// We only draw a fourth of the points plus the last one
 		int divisor = 4;
 		std::vector<ImVec2> points;
 		points.reserve(1 + WAVE_LEN/divisor);
