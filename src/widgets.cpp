@@ -321,15 +321,17 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 
 		// Draw lines
 		ImGui::PushClipRect(cellBox.Min, cellBox.Max, true);
-		ImVec2 lastPos;
-		for (int i = 0; i < WAVE_LEN; i++) {
+		int divisor = 8; // only draw an eigth of the points plus the last one
+		std::vector<ImVec2> points;
+		points.reserve(1 + WAVE_LEN/divisor);
+		for (int i = 0; i < 1 + WAVE_LEN; i += divisor) {
 			float value = currentBank.waves[j].postSamples[i];
 			float margin = 3.0;
 			ImVec2 pos = ImVec2(rescalef(i, 0, WAVE_LEN - 1, cellBox.Min.x, cellBox.Max.x), rescalef(value, 1.0, -1.0, cellBox.Min.y + margin, cellBox.Max.y - margin));
-			if (i > 0)
-				window->DrawList->AddLine(lastPos, pos, ImGui::GetColorU32(ImGuiCol_PlotLines));
-			lastPos = pos;
+			points.emplace_back(pos);
 		}
+		window->DrawList->AddPolyline(points.data(), 1 + WAVE_LEN/divisor, ImGui::GetColorU32(ImGuiCol_PlotLines), false, 1.0, false);
+
 
 		// Draw cell label
 		char label[64];
