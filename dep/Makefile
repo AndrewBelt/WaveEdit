@@ -3,7 +3,7 @@ LOCAL = $(PWD)
 
 include ../Makefile-arch.inc
 ifeq ($(ARCH),mac)
-	export CFLAGS = -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk \
+	export CFLAGS = \
 		-mmacosx-version-min=10.7
 	export CXXFLAGS = $(CFLAGS)
 	export LDFLAGS = $(CFLAGS)
