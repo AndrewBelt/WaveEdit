@@ -31,7 +31,6 @@ ifeq ($(ARCH),lin)
 else ifeq ($(ARCH),mac)
 	# Mac
 	FLAGS += -DARCH_MAC \
-		-isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk \
 		-mmacosx-version-min=10.7
 	CXXFLAGS += -stdlib=libc++
 	LDFLAGS += -mmacosx-version-min=10.7 \
