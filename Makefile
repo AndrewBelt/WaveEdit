@@ -32,7 +32,7 @@ else ifeq ($(ARCH),mac)
 	# Mac
 	FLAGS += -DARCH_MAC \
 		-mmacosx-version-min=10.7
-	CXXFLAGS += -stdlib=libc++
+	CXXFLAGS += -stdlib=libc++ -I/opt/X11/include
 	LDFLAGS += -mmacosx-version-min=10.7 \
 		-stdlib=libc++ -lpthread \
 		-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
