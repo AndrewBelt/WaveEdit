@@ -8,6 +8,7 @@ bool clipboardActive = false;
 
 
 const char *effectNames[EFFECTS_LEN] {
+	"Trim",
 	"Pre-Gain",
 	"Phase Shift",
 	"Harmonic Shift",
@@ -30,6 +31,14 @@ void Wave::clear() {
 void Wave::updatePost() {
 	float out[WAVE_LEN];
 	memcpy(out, samples, sizeof(float) * WAVE_LEN);
+
+	// Trim
+	if (effects[TRIM]) {
+		float gain = powf(20.0, effects[TRIM]);
+		for (int i = 0; i < WAVE_LEN; i++) {
+			out[i] *= (1.0 / gain);
+		}
+	}
 
 	// Pre-gain
 	if (effects[PRE_GAIN]) {
@@ -264,7 +273,8 @@ void Wave::bakeEffects() {
 }
 
 void Wave::randomizeEffects() {
-	for (int i = 0; i < EFFECTS_LEN; i++) {
+	// Start at 1 so we don't randomize Trim and Gain together
+	for (int i = 1; i < EFFECTS_LEN; i++) {
 		effects[i] = randf() > 0.5 ? powf(randf(), 2) : 0.0;
 	}
 	updatePost();

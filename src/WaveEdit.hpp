@@ -123,6 +123,7 @@ unsigned char *base64_decode(const unsigned char *src, size_t len, size_t *out_l
 #define WAVE_LEN 256
 
 enum EffectID {
+	TRIM,
 	PRE_GAIN,
 	PHASE_SHIFT,
 	HARMONIC_SHIFT,
