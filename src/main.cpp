@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 	SDL_DisplayMode current;
 	SDL_GetCurrentDisplayMode(0, &current);
-	SDL_Window *window = SDL_CreateWindow("Synthesis Technology WaveEdit",
+	SDL_Window *window = SDL_CreateWindow("",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		1024, 768,
 		SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
@@ -95,6 +95,22 @@ int main(int argc, char **argv) {
 			if (event.type == SDL_QUIT) {
 				running = false;
 			}
+		}
+
+		// Set title
+		const char *title = SDL_GetWindowTitle(window);
+		char newTitle[1024];
+		if (lastFilename[0]) {
+			char lastBasename[1024];
+			snprintf(lastBasename, sizeof(lastBasename), "%s", lastFilename);
+			char *laseBasenameP = basename(lastBasename);
+			snprintf(newTitle, sizeof(newTitle), "Synthesis Technology WaveEdit - %s", laseBasenameP);
+		}
+		else {
+			snprintf(newTitle, sizeof(newTitle), "Synthesis Technology WaveEdit");
+		}
+		if (strcmp(title, newTitle) != 0) {
+			SDL_SetWindowTitle(window, newTitle);
 		}
 
 		ImGui_ImplSdlGL2_NewFrame(window);

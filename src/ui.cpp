@@ -26,7 +26,7 @@ static bool showTestWindow = false;
 static ImTextureID logoTextureLight;
 static ImTextureID logoTextureDark;
 static ImTextureID logoTexture;
-static char lastFilename[1024] = "";
+char lastFilename[1024] = "";
 static int styleId = 0;
 int selectedId = 0;
 int lastSelectedId = 0;

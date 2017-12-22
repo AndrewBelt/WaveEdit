@@ -299,6 +299,7 @@ void uiRender();
 // Selections span the range between these indices
 extern int selectedId;
 extern int lastSelectedId;
+extern char lastFilename[1024];
 
 
 ////////////////////
