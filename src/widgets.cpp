@@ -500,6 +500,22 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 
 	ImVec2 waveOffset = ImVec2(5, -5);
 
+	// Pre-effect plots
+	for (int b = 0; b < BANK_LEN; b++) {
+		ImVec2 points[WAVE_LEN];
+		for (int i = 0; i < WAVE_LEN; i++) {
+			float value = currentBank.waves[b].samples[i];
+			ImVec2 a = ImVec2(rescalef(i, 0, WAVE_LEN-1, -1.0, 1.0), rescalef(b, 0, BANK_LEN-1, -1.0, 1.0));
+			a = ImRotate(a, cosf(theta), sinf(theta)) / M_SQRT2;
+			a.y += -amplitude * 0.3 * value;
+			ImVec2 point = ImVec2(rescalef(a.x, -1.0, 1.0, box.Min.x, box.Max.x), rescalef(a.y, 1.0, -1.0, box.Min.y, box.Max.y));
+			points[i] = point;
+		}
+		float thickness = 1.0;
+		window->DrawList->AddPolyline(points, WAVE_LEN, ImGui::GetColorU32(ImGuiCol_FrameBg), false, thickness, true);
+	}
+
+	// Post-effect plots
 	for (int b = 0; b < BANK_LEN; b++) {
 		ImVec2 points[WAVE_LEN];
 		for (int i = 0; i < WAVE_LEN; i++) {
