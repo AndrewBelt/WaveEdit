@@ -234,6 +234,10 @@ static void menuRandomize() {
 	historyPush();
 }
 
+static void incrementSelectedId(int delta) {
+	selectWave(clampi(selectedId + delta, 0, BANK_LEN-1));
+}
+
 static void menuKeyCommands() {
 	ImGuiContext &g = *GImGui;
 	ImGuiIO &io = ImGui::GetIO();
@@ -289,6 +293,14 @@ static void menuKeyCommands() {
 				currentPage = IMPORT_PAGE;
 			if (ImGui::IsKeyPressed(SDLK_6))
 				currentPage = DB_PAGE;
+			if (ImGui::IsKeyPressed(SDL_SCANCODE_UP))
+				incrementSelectedId(currentPage == GRID_PAGE ? -BANK_GRID_WIDTH : -1);
+			if (ImGui::IsKeyPressed(SDL_SCANCODE_DOWN))
+				incrementSelectedId(currentPage == GRID_PAGE ? BANK_GRID_WIDTH : 1);
+			if (ImGui::IsKeyPressed(SDL_SCANCODE_LEFT))
+				incrementSelectedId(-1);
+			if (ImGui::IsKeyPressed(SDL_SCANCODE_RIGHT))
+				incrementSelectedId(1);
 		}
 	}
 }
