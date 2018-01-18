@@ -13,8 +13,7 @@
 #ifdef ARCH_MAC
 
 #include <unistd.h> // for chdir
-#define _GNU_SOURCE // to enable basename on MinGW
-#include <libgen.h> // for dirname and basename
+#include <libgen.h> // for dirname
 #include <mach-o/dyld.h> // for _NSGetExecutablePath
 #include <limits.h> // for PATH_MAX?
 
@@ -102,10 +101,15 @@ int main(int argc, char **argv) {
 		const char *title = SDL_GetWindowTitle(window);
 		char newTitle[1024];
 		if (lastFilename[0]) {
+			char *lastBasenameP;
+#if defined(ARCH_WIN)
+			lastBasenameP = lastFilename;
+#else
 			char lastBasename[1024];
 			snprintf(lastBasename, sizeof(lastBasename), "%s", lastFilename);
-			char *laseBasenameP = basename(lastBasename);
-			snprintf(newTitle, sizeof(newTitle), "Synthesis Technology WaveEdit - %s", laseBasenameP);
+			lastBasenameP = basename(lastBasename);
+#endif
+			snprintf(newTitle, sizeof(newTitle), "Synthesis Technology WaveEdit - %s", lastBasenameP);
 		}
 		else {
 			snprintf(newTitle, sizeof(newTitle), "Synthesis Technology WaveEdit");
