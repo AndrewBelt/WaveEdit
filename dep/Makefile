@@ -9,7 +9,7 @@ ifeq ($(ARCH),mac)
 	export LDFLAGS = $(CFLAGS)
 endif
 
-sdl2 = SDL2-2.0.5
+sdl2 = SDL2-2.0.7
 jansson = jansson-2.10
 libsndfile = libsndfile-1.0.28
 libsamplerate = libsamplerate-0.1.9
