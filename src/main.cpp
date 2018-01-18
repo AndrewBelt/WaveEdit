@@ -13,7 +13,8 @@
 #ifdef ARCH_MAC
 
 #include <unistd.h> // for chdir
-#include <libgen.h> // for dirname
+#define _GNU_SOURCE // to enable basename on MinGW
+#include <libgen.h> // for dirname and basename
 #include <mach-o/dyld.h> // for _NSGetExecutablePath
 #include <limits.h> // for PATH_MAX?
 
