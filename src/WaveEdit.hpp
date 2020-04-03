@@ -112,6 +112,14 @@ float *loadAudio(const char *filename, int *length);
 std::string stringf(const char *format, ...);
 /** Truncates a string if needed, inserting ellipses (...), to be no greater than `maxLen` characters */
 void ellipsize(char *str, int maxLen);
+/** Writes a 32-bit integer in little endian order */
+size_t fwriteLE32(uint32_t x, FILE *f);
+/** Writes a 16-bit integer in little endian order */
+size_t fwriteLE16(uint16_t x, FILE *f);
+/** Reads a 32-bit integer in little endian order */
+size_t freadLE32(uint32_t *x, FILE *f);
+/** Reads a 16-bit integer in little endian order */
+size_t freadLE16(uint16_t *x, FILE *f);
 unsigned char *base64_encode(const unsigned char *src, size_t len, size_t *out_len);
 unsigned char *base64_decode(const unsigned char *src, size_t len, size_t *out_len);
 
@@ -198,6 +206,12 @@ struct Bank {
 	/** WAV file with BANK_LEN * WAVE_LEN samples */
 	void saveWAV(const char *filename);
 	void loadWAV(const char *filename);
+	/** WT file with BANK_LEN banks of WAVE_LEN samples each */
+	void saveWT(const char *filename);
+	void loadWT(const char *filename);
+	/** Automatic format determined according to file name */
+	void saveAuto(const char *filename);
+	void loadAuto(const char *filename);
 	/** Saves each wave to its own file in a directory */
 	void saveWaves(const char *dirname);
 };
