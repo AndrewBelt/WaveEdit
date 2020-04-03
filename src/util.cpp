@@ -2,6 +2,8 @@
 #include <string.h>
 #include <sndfile.h>
 #include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -87,6 +89,46 @@ void ellipsize(char *str, int maxLen) {
 		str[maxLen - 1] = '.';
 		str[maxLen] = '\0';
 	}
+}
+
+
+size_t fwriteLE32(uint32_t x, FILE *f)
+{
+	uint8_t b[4];
+	b[0] = x & 0xff;
+	b[1] = (x >> 8) & 0xff;
+	b[2] = (x >> 16) & 0xff;
+	b[3] = x >> 24;
+	return fwrite(b, 4, 1, f);
+}
+
+
+size_t fwriteLE16(uint16_t x, FILE *f)
+{
+	uint8_t b[2];
+	b[0] = x & 0xff;
+	b[1] = x >> 8;
+	return fwrite(b, 2, 1, f);
+}
+
+
+size_t freadLE32(uint32_t *x, FILE *f)
+{
+	uint8_t b[4];
+	if (fread(b, 4, 1, f) != 1)
+		return 0;
+	*x = b[0] | (b[1] << 8) | (b[2] << 16) | (b[3] << 24);
+	return 1;
+}
+
+
+size_t freadLE16(uint16_t *x, FILE *f)
+{
+	uint8_t b[2];
+	if (fread(b, 2, 1, f) != 1)
+		return 0;
+	*x = b[0] | (b[1] << 8);
+	return 1;
 }
 
 

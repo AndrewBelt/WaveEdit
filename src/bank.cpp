@@ -2,6 +2,9 @@
 #include <string.h>
 #include <sndfile.h>
 
+#if defined(_WIN32)
+#define strcasecmp _stricmp
+#endif
 
 void Bank::clear() {
 	// The lazy way
@@ -116,5 +119,140 @@ void Bank::saveWaves(const char *dirname) {
 		snprintf(filename, sizeof(filename), "%s/%02d.wav", dirname, b);
 
 		waves[b].saveWAV(filename);
+	}
+}
+
+
+void Bank::saveWT(const char *filename)
+{
+	FILE *f = fopen(filename, "wb");
+	if (!f)
+		return;
+
+	fputs("vawt", f);
+	fwriteLE32(WAVE_LEN, f);
+	fwriteLE16(BANK_LEN, f);
+	fwriteLE16(0, f);
+
+	for (int i = 0; i < BANK_LEN; i++) {
+		for (int j = 0; j < WAVE_LEN; j++) {
+			union { uint32_t i; float f; } u;
+			u.f = waves[i].postSamples[j];
+			fwriteLE32(u.i, f);
+		}
+	}
+
+	fclose(f);
+}
+
+
+void Bank::loadWT(const char *filename)
+{
+	FILE *f = fopen(filename, "rb");
+	if (!f)
+		return;
+
+	char magic[4];
+	memset(magic, 0, 4);
+	fread(magic, 4, 1, f);
+
+	if (memcmp(magic, "vawt", 4) != 0) {
+		fclose(f);
+		return;
+	}
+
+	uint32_t waveLen = 0;
+	uint16_t fileBankLen = 0;
+	uint16_t flags = 0;
+
+	freadLE32(&waveLen, f);
+	freadLE16(&fileBankLen, f);
+	freadLE16(&flags, f);
+
+	if (waveLen > 1024) {
+		fclose(f);
+		return;
+	}
+
+	uint32_t bankLen = fileBankLen;
+	if (bankLen > BANK_LEN)
+		bankLen = BANK_LEN;
+
+	clear();
+
+	std::vector<float> rawSamples(waveLen * bankLen);
+
+	if (flags & 4) {
+		for (uint32_t i = 0; i < waveLen * bankLen; ++i) {
+			int16_t sample = 0;
+			freadLE16((uint16_t *)&sample, f);
+			rawSamples[i] = sample / 32768.0f;
+		}
+	}
+	else {
+		for (uint32_t i = 0; i < waveLen * bankLen; ++i) {
+			union { uint32_t i; float f; } u;
+			u.i = 0;
+			freadLE32(&u.i, f);
+			rawSamples[i] = u.f;
+		}
+	}
+
+	for (uint32_t i = 0; i < bankLen; i++) {
+		const float *src = &rawSamples[waveLen * i];
+		float *dst = waves[i].samples;
+		if (waveLen == WAVE_LEN)
+			memcpy(dst, src, WAVE_LEN * sizeof(float));
+		else
+			resample(src, waveLen, dst, WAVE_LEN, (double)WAVE_LEN/waveLen);
+		waves[i].commitSamples();
+	}
+
+	fclose(f);
+}
+
+
+enum BankFileFormat {
+	BANK_FORMAT_WAV,
+	BANK_FORMAT_WT,
+};
+
+
+static int getFormatByFilename(const char *filename)
+{
+	size_t len = strlen(filename);
+	if (len > 4 && strcasecmp(filename + len - 4, ".wav") == 0)
+		return BANK_FORMAT_WAV;
+	else if (len > 3 && strcasecmp(filename + len - 3, ".wt") == 0)
+		return BANK_FORMAT_WT;
+	else
+		return -1;
+}
+
+
+void Bank::saveAuto(const char *filename)
+{
+	switch (getFormatByFilename(filename)) {
+		default:
+		case BANK_FORMAT_WAV:
+			saveWAV(filename);
+			break;
+		case BANK_FORMAT_WT:
+			saveWT(filename);
+			break;
+	}
+}
+
+
+void Bank::loadAuto(const char *filename)
+{
+	switch (getFormatByFilename(filename)) {
+		default:
+		case BANK_FORMAT_WAV:
+			loadWAV(filename);
+			break;
+		case BANK_FORMAT_WT:
+			loadWT(filename);
+			break;
 	}
 }
