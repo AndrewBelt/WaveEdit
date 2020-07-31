@@ -120,7 +120,7 @@ unsigned char *base64_decode(const unsigned char *src, size_t len, size_t *out_l
 // wave.cpp
 ////////////////////
 
-#define WAVE_LEN 256
+#define WAVE_LEN 1024
 
 enum EffectID {
 	PRE_GAIN,

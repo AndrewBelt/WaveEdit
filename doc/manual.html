@@ -75,7 +75,7 @@ It was developed by <a href="https://andrewbelt.name/">Andrew Belt</a> for Synth
 <p>In <em>WaveEdit</em> and the Synthesis Technology E370 and E352 modules, you can load a bank of wavetables and morph/interpolate between them as they cycle at a particular frequency.</p>
 <ul>
 <li>A bank contains 64 wavetables</li>
-<li>A wavetable contains 256 samples</li>
+<li>A wavetable contains 1024 samples</li>
 </ul>
 <p>In Z mode, all 64 wavetables are positioned on a line, and the Z parameter interpolates wavetables from wave 0 to wave 63.
 In XY mode, the wavetables are positioned on an 8x8 grid and interpolated in 2D.</p>
@@ -119,7 +119,7 @@ The <strong>Brush</strong> tool smoothly adjusts adjacent samples depending on t
 To adjust a single sample without modifying adjacent samples, use the <strong>Grab</strong> tool.
 Use the <strong>Line</strong> tool to draw a straight line by dragging and the <strong>Erase</strong> tool to set samples and harmonics to zero as you drag across them.</p>
 <p>To the right of the tool selection, you can load a number of preset wavetables from the <code>catalog/</code> subfolders.
-You may customize these presets by adding WAV files with 256 samples to a subfolder in the catalog.
+You may customize these presets by adding WAV files with 1024 samples to a subfolder in the catalog.
 You may even create new subfolders, optionally prefixing the filenames with numbers to alphabetically sort them.</p>
 <p>Below the Harmonic display are sliders to adjust the effect amount for the active wavetable.
 The meanings of the effects and effect buttons are described in the Effect Editor section.</p>
