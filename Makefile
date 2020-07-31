@@ -31,9 +31,9 @@ ifeq ($(ARCH),lin)
 else ifeq ($(ARCH),mac)
 	# Mac
 	FLAGS += -DARCH_MAC \
-		-mmacosx-version-min=10.7
+		-mmacosx-version-min=10.11
 	CXXFLAGS += -stdlib=libc++
-	LDFLAGS += -mmacosx-version-min=10.7 \
+	LDFLAGS += -mmacosx-version-min=10.11 \
 		-stdlib=libc++ -lpthread \
 		-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
 		-Ldep/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl

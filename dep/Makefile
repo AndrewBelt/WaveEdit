@@ -4,7 +4,7 @@ LOCAL = $(PWD)
 include ../Makefile-arch.inc
 ifeq ($(ARCH),mac)
 	export CFLAGS = \
-		-mmacosx-version-min=10.7
+		-mmacosx-version-min=10.11
 	export CXXFLAGS = $(CFLAGS)
 	export LDFLAGS = $(CFLAGS)
 endif
@@ -45,9 +45,9 @@ $(libsndfile):
 $(libsamplerate):
 	wget -nc http://www.mega-nerd.com/SRC/$@.tar.gz
 	tar xf $@.tar.gz
-	cd $@ && ./configure --prefix="$(LOCAL)"
-	$(MAKE) -C $@
-	$(MAKE) -C $@ install
+	cd $@ && ./configure --prefix="$(LOCAL)" --disable-fftw --disable-sndfile
+	$(MAKE) -C $@/src
+	$(MAKE) -C $@/src install
 
 $(libcurl):
 	wget https://curl.haxx.se/download/$@.tar.gz
