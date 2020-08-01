@@ -178,7 +178,7 @@ extern bool clipboardActive;
 // bank.cpp
 ////////////////////
 
-#define BANK_LEN 64
+#define BANK_LEN 16
 #define BANK_GRID_WIDTH 8
 #define BANK_GRID_HEIGHT 8
 
