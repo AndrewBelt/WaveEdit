@@ -5,7 +5,7 @@ import scipy.signal
 import scipy.io.wavfile
 
 CATALOG_DIR = "catalog"
-SAMPLE_RATE = 44100
+SAMPLE_RATE = 48000
 NUM_SAMPLES = 1024
 t = np.linspace(0, 1, NUM_SAMPLES, False)
 
