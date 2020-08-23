@@ -38,7 +38,7 @@ $(jansson):
 $(libsndfile):
 	wget -nc http://www.mega-nerd.com/libsndfile/files/$@.tar.gz
 	tar xf $@.tar.gz
-	cd $@ && ./configure --prefix="$(LOCAL)"
+	cd $@ && ./configure --prefix="$(LOCAL)" --enable-external-libs=no
 	$(MAKE) -C $@
 	$(MAKE) -C $@ install
 
