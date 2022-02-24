@@ -272,7 +272,7 @@ void Wave::randomizeEffects() {
 
 void Wave::saveWAV(const char *filename) {
 	SF_INFO info;
-	info.samplerate = 44100;
+	info.samplerate = 48000;
 	info.channels = 1;
 	info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16 | SF_ENDIAN_LITTLE;
 	SNDFILE *sf = sf_open(filename, SFM_WRITE, &info);

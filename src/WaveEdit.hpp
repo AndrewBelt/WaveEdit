@@ -120,7 +120,7 @@ unsigned char *base64_decode(const unsigned char *src, size_t len, size_t *out_l
 // wave.cpp
 ////////////////////
 
-#define WAVE_LEN 256
+#define WAVE_LEN 1024
 
 enum EffectID {
 	PRE_GAIN,
@@ -178,7 +178,7 @@ extern bool clipboardActive;
 // bank.cpp
 ////////////////////
 
-#define BANK_LEN 64
+#define BANK_LEN 16
 #define BANK_GRID_WIDTH 8
 #define BANK_GRID_HEIGHT 8
 
