@@ -303,14 +303,6 @@ extern char lastFilename[1024];
 
 
 ////////////////////
-// db.cpp
-////////////////////
-
-void dbInit();
-void dbPage();
-
-
-////////////////////
 // import.cpp
 ////////////////////
 

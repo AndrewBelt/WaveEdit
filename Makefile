@@ -25,7 +25,7 @@ ifeq ($(ARCH),lin)
 	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0)
 	LDFLAGS += -static-libstdc++ -static-libgcc \
 		-lGL -lpthread \
-		-Ldep/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
+		-Ldep/lib -lSDL2 -lsamplerate -lsndfile \
 		-lgtk-x11-2.0 -lgobject-2.0
 	SOURCES += ext/osdialog/osdialog_gtk2.c
 else ifeq ($(ARCH),mac)
@@ -36,13 +36,13 @@ else ifeq ($(ARCH),mac)
 	LDFLAGS += -mmacosx-version-min=10.7 \
 		-stdlib=libc++ -lpthread \
 		-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
-		-Ldep/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl
+		-Ldep/lib -lSDL2 -lsamplerate -lsndfile
 	SOURCES += ext/osdialog/osdialog_mac.m
 else ifeq ($(ARCH),win)
 	# Windows
 	FLAGS += -DARCH_WIN
 	LDFLAGS += \
-		-Ldep/lib -lmingw32 -lSDL2main -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
+		-Ldep/lib -lmingw32 -lSDL2main -lSDL2 -lsamplerate -lsndfile \
 		-lopengl32 -mwindows
 	SOURCES += ext/osdialog/osdialog_win.c
 	OBJECTS += info.o
@@ -87,8 +87,6 @@ ifeq ($(ARCH),lin)
 	cp dep/lib/libSDL2-2.0.so.0 dist/WaveEdit
 	cp dep/lib/libsamplerate.so.0 dist/WaveEdit
 	cp dep/lib/libsndfile.so.1 dist/WaveEdit
-	cp dep/lib/libjansson.so.4 dist/WaveEdit
-	cp dep/lib/libcurl.so.4 dist/WaveEdit
 else ifeq ($(ARCH),mac)
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/Resources
@@ -103,10 +101,6 @@ else ifeq ($(ARCH),mac)
 	install_name_tool -change $(PWD)/dep/lib/libsamplerate.0.dylib @executable_path/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 	cp dep/lib/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	install_name_tool -change $(PWD)/dep/lib/libsndfile.1.dylib @executable_path/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp dep/lib/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/dep/lib/libjansson.4.dylib @executable_path/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp dep/lib/libcurl.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/dep/lib/libcurl.4.dylib @executable_path/libcurl.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 else ifeq ($(ARCH),win)
 	cp -R logo*.png fonts catalog dist/WaveEdit
@@ -117,8 +111,6 @@ else ifeq ($(ARCH),win)
 	cp dep/bin/SDL2.dll dist/WaveEdit
 	cp dep/bin/libsamplerate-0.dll dist/WaveEdit
 	cp dep/bin/libsndfile-1.dll dist/WaveEdit
-	cp dep/bin/libjansson-4.dll dist/WaveEdit
-	cp dep/bin/libcurl-4.dll dist/WaveEdit
 endif
 	cd dist && zip -9 -r WaveEdit-$(VERSION)-$(ARCH).zip WaveEdit
 
