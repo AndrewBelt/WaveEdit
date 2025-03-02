@@ -156,7 +156,7 @@ static void menuOpenBank() {
 	char *path = osdialog_file(OSDIALOG_OPEN, dir, NULL, NULL);
 	if (path) {
 		showCurrentBankPage();
-		currentBank.loadWAV(path);
+		currentBank.loadAuto(path);
 		snprintf(lastFilename, sizeof(lastFilename), "%s", path);
 		historyPush();
 		free(path);
@@ -168,7 +168,7 @@ static void menuSaveBankAs() {
 	char *dir = getLastDir();
 	char *path = osdialog_file(OSDIALOG_SAVE, dir, "Untitled.wav", NULL);
 	if (path) {
-		currentBank.saveWAV(path);
+		currentBank.saveAuto(path);
 		snprintf(lastFilename, sizeof(lastFilename), "%s", path);
 		free(path);
 	}
@@ -177,7 +177,7 @@ static void menuSaveBankAs() {
 
 static void menuSaveBank() {
 	if (lastFilename[0] != '\0')
-		currentBank.saveWAV(lastFilename);
+		currentBank.saveAuto(lastFilename);
 	else
 		menuSaveBankAs();
 }
