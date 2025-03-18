@@ -131,7 +131,7 @@ void audioOpen(int deviceId) {
 
 	SDL_AudioSpec spec;
 	memset(&spec, 0, sizeof(spec));
-	spec.freq = 44100;
+	spec.freq = 48000;
 	spec.format = AUDIO_F32;
 	spec.channels = 1;
 	spec.samples = 1024;
